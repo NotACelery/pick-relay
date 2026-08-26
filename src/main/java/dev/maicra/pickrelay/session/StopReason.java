@@ -1,0 +1,16 @@
+package dev.maicra.pickrelay.session;
+
+public enum StopReason {
+    MANUAL,
+    QUEUE_COMPLETE,
+    PLAYER_MOVED,
+    PHYSICAL_LEFT_CLICK,
+    PHYSICAL_RIGHT_CLICK,
+    PLAYER_DEATH,
+    DISCONNECT,
+    DIMENSION_CHANGE,
+    TOOL_INVALID,
+    INVENTORY_DESYNC,
+    NO_VALID_NEXT_TOOL,
+    INTERNAL_SAFETY
+}

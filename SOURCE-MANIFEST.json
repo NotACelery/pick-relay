@@ -1,0 +1,255 @@
+{
+  "version": "0.1.0-alpha.7",
+  "files": [
+    {
+      "path": ".gitignore",
+      "sha256": "885e8154f81fd774eb00ecce77ffdcfd7ae6e540084f5b283eb21f086f5d79c2",
+      "bytes": 48
+    },
+    {
+      "path": "BUILD-STATUS.md",
+      "sha256": "c5f9bfe934b3c7b634425d8d0948d8e70b0161af29c16b14a3cc72f4b8f80d0b",
+      "bytes": 2484
+    },
+    {
+      "path": "CHANGELOG.md",
+      "sha256": "9ad7f342fc90d7591f43db28c31cac3d912a8161f10897a9d6394dbf6fc86750",
+      "bytes": 9082
+    },
+    {
+      "path": "README.md",
+      "sha256": "c5f3045a3752c080327b8678f17fde3d947b7a29d71b2e59527c9596e17597b0",
+      "bytes": 6810
+    },
+    {
+      "path": "build-alpha.bat",
+      "sha256": "cdf07d395899147bef808a2d504c8075c834152f45365b51ee79132ad687f7ce",
+      "bytes": 6682
+    },
+    {
+      "path": "build-alpha.sh",
+      "sha256": "f5901662a007ccf968dbd064330b00b6561d174d73a7a3107688191d5142f860",
+      "bytes": 2167
+    },
+    {
+      "path": "build.gradle",
+      "sha256": "fc36eb7d9d69dc68e42bf2f29dd4f71b7b55fd8557204cdc2e4d08ea76bbeec5",
+      "bytes": 1619
+    },
+    {
+      "path": "docs/IMPLEMENTATION-STATUS-alpha.7.md",
+      "sha256": "1c44f8e5550b728b94ddb66b392c7c220b83a3ce0f95e30f8c28431279e3a5e8",
+      "bytes": 3216
+    },
+    {
+      "path": "docs/PROJECT-HANDOFF-alpha.4.md",
+      "sha256": "38eeecacd4563b935dc0d61e6ca8e3c13bb24e2b597c7ce8671fb4175afea7c1",
+      "bytes": 4333
+    },
+    {
+      "path": "docs/PROJECT-HANDOFF-alpha.5.md",
+      "sha256": "356744b5ef3d1f0f5bc00ada203c6a0d581ead41292838942b780b1fa4584818",
+      "bytes": 3870
+    },
+    {
+      "path": "docs/PROJECT-HANDOFF-alpha.6.md",
+      "sha256": "af1314f0843b0cc6e3b1033df836b790ba25ad0b0cf87cac5004173534a0ae0d",
+      "bytes": 1684
+    },
+    {
+      "path": "docs/PROJECT-HANDOFF-alpha.7.md",
+      "sha256": "b7277934983c1d33060382a9cb720ff91cf1e0b1f4884b00f53054c5809a3cf9",
+      "bytes": 2339
+    },
+    {
+      "path": "docs/Pick-Relay-Especificacion-Pre-Desarrollo.md",
+      "sha256": "a80879a87d32bfd9fb5eba0e0819b2cfe0821fde1717d0bac5e97e50da75ee3a",
+      "bytes": 60500
+    },
+    {
+      "path": "docs/TESTING-alpha.3.md",
+      "sha256": "5d06666cd406ed8dabe4ddd521d17b996a857ae1a30f04e036fffaaaabe3b75c",
+      "bytes": 4578
+    },
+    {
+      "path": "docs/TESTING-alpha.4.md",
+      "sha256": "b5f924c6a5e0ecd004e6ef82c5e905f50dca465768b8a34aacdeb690cbba19a1",
+      "bytes": 6227
+    },
+    {
+      "path": "docs/TESTING-alpha.5.md",
+      "sha256": "573ae37fcee2f132bc08e73a4fe315613d50a944505db49ebc379ddb641c2068",
+      "bytes": 3972
+    },
+    {
+      "path": "docs/TESTING-alpha.6.md",
+      "sha256": "2812ffdbbfe44f26cd371dd7c2e97d6fe24ec71951908787a773aca3adedf158",
+      "bytes": 2250
+    },
+    {
+      "path": "docs/TESTING-alpha.7.md",
+      "sha256": "c3c73fc1be60631ab5ef6f178a29e1596d2e5fdd2df6e22a11cf6a134b43e1ad",
+      "bytes": 3475
+    },
+    {
+      "path": "gradle.properties",
+      "sha256": "2b437069d3b334127f91ef3a5474546bbda5a9787649e10a5918720468b89def",
+      "bytes": 521
+    },
+    {
+      "path": "settings.gradle",
+      "sha256": "767cfe93113157aea514a3f14f97c43b9544854161e11f09d5ac088052c1d9d0",
+      "bytes": 195
+    },
+    {
+      "path": "src/main/java/dev/maicra/pickrelay/PickRelay.java",
+      "sha256": "2fcc6fd60a65f9847ae9ee17bed9b78ada01df391843ea91a5f49a7f37433c80",
+      "bytes": 625
+    },
+    {
+      "path": "src/main/java/dev/maicra/pickrelay/client/ClientEvents.java",
+      "sha256": "75df0a38b398f85b7e69c5496bd8ae035b34413f281dfe90d76dd8b5f91dffbf",
+      "bytes": 2453
+    },
+    {
+      "path": "src/main/java/dev/maicra/pickrelay/client/PickRelayController.java",
+      "sha256": "53a4bd5ea55d4db52eacce8df2861e14c9b1d65863ab31233b3c743ce5482e5a",
+      "bytes": 19434
+    },
+    {
+      "path": "src/main/java/dev/maicra/pickrelay/client/RelayDebug.java",
+      "sha256": "cd670f91a89d32b50d5c03aa35aa0a55eb6d17268d8483e47bdf5332e4e40470",
+      "bytes": 415
+    },
+    {
+      "path": "src/main/java/dev/maicra/pickrelay/client/RelayKeyMappings.java",
+      "sha256": "e5d3dc6ed064fe2ddf9334664ff0f6f6bdf898f450b6aa4ccb6feed44572d325",
+      "bytes": 973
+    },
+    {
+      "path": "src/main/java/dev/maicra/pickrelay/client/gui/PickRelayScreen.java",
+      "sha256": "cd621973a2e7dc8c1cd8c08f280f3c6c54942c9f1b7b869a5f8495b2513b9a4c",
+      "bytes": 39678
+    },
+    {
+      "path": "src/main/java/dev/maicra/pickrelay/client/hud/PickRelayHud.java",
+      "sha256": "ab2e5f5d7bc9e2b32b19b64492973635b54afd5750bcf57627f70d1e6174ba61",
+      "bytes": 2191
+    },
+    {
+      "path": "src/main/java/dev/maicra/pickrelay/client/inventory/InventoryRelayManager.java",
+      "sha256": "24bba5a4a48017502173caab915647ccdf5e0cc47dad8a82489cbb7d9142b642",
+      "bytes": 5432
+    },
+    {
+      "path": "src/main/java/dev/maicra/pickrelay/client/progress/MiningProgressTracker.java",
+      "sha256": "512e4bc7a039b2f8a2646e26b78865a5d5d301b2073d9bed337f28ecf5a1bfc7",
+      "bytes": 1313
+    },
+    {
+      "path": "src/main/java/dev/maicra/pickrelay/client/safety/SafetyMonitor.java",
+      "sha256": "d0d5465cbd3c9f5fde6aaf7bf22b7ad3af50448179a8df046172ecea0e69f324",
+      "bytes": 1574
+    },
+    {
+      "path": "src/main/java/dev/maicra/pickrelay/client/tool/ToolEligibility.java",
+      "sha256": "6af0e6698aae3f9e96bfa59b3ef24452ab5b2dc7198a2bec3f411e31cbc7c7c4",
+      "bytes": 512
+    },
+    {
+      "path": "src/main/java/dev/maicra/pickrelay/client/tool/ToolFingerprint.java",
+      "sha256": "98de470a45590db97401c279077f99bff1d103af156477f6b00ddc200767fdb1",
+      "bytes": 1036
+    },
+    {
+      "path": "src/main/java/dev/maicra/pickrelay/client/tool/ToolTracker.java",
+      "sha256": "70175494c2db39f4cf3db8b8497f9220d2c5462914769720363e21cbf753972e",
+      "bytes": 1554
+    },
+    {
+      "path": "src/main/java/dev/maicra/pickrelay/mixin/MultiPlayerGameModeInvoker.java",
+      "sha256": "9543f99f7140c51f9c1515552311499c18ee109b3ec8b4d2b2e56808122a65fd",
+      "bytes": 359
+    },
+    {
+      "path": "src/main/java/dev/maicra/pickrelay/mixin/MultiPlayerGameModeMixin.java",
+      "sha256": "d7084306e0816e2155cd3fbe86eb163c7ad1bb387cca1eb50b1644c7cd1f3f2d",
+      "bytes": 1529
+    },
+    {
+      "path": "src/main/java/dev/maicra/pickrelay/session/RelayEntry.java",
+      "sha256": "f81fa6ffb06d011e511e70456c7a811908cb20ab2df00336146fa5bb3c35db4e",
+      "bytes": 4700
+    },
+    {
+      "path": "src/main/java/dev/maicra/pickrelay/session/RelayEntryStatus.java",
+      "sha256": "95c8921fba673c036e4237b2a2aece8bbca6e1581e5f0b03b18654462375f842",
+      "bytes": 164
+    },
+    {
+      "path": "src/main/java/dev/maicra/pickrelay/session/RelayMiningMode.java",
+      "sha256": "379f8a97a8ecc49680fce499462b7657ce1b68858bb73a34139c574814c60787",
+      "bytes": 175
+    },
+    {
+      "path": "src/main/java/dev/maicra/pickrelay/session/RelayQueue.java",
+      "sha256": "8be1dbfd19ca50fdf6429816d4ebcab911beca22ecaf28bc6e1ef2edb3e86859",
+      "bytes": 3669
+    },
+    {
+      "path": "src/main/java/dev/maicra/pickrelay/session/RelayState.java",
+      "sha256": "9053d50629705f53d2c8e1146290b929921b39963d5007e819e31769e844bd07",
+      "bytes": 132
+    },
+    {
+      "path": "src/main/java/dev/maicra/pickrelay/session/RelayValidationResult.java",
+      "sha256": "3ace2567ff70843153f78af2b8798c89cca4d5703af1f733b14413cad0ad24d1",
+      "bytes": 503
+    },
+    {
+      "path": "src/main/java/dev/maicra/pickrelay/session/RelayValidator.java",
+      "sha256": "130c4807a2f9821a63f01ebacd8e6f1549186486c86f5a8caffae2853524a4e5",
+      "bytes": 3642
+    },
+    {
+      "path": "src/main/java/dev/maicra/pickrelay/session/RelayWorkMode.java",
+      "sha256": "cbea75fe6d56ca60044612cb80622e6a25f9898932aa5751ae82de6e732e00f2",
+      "bytes": 255
+    },
+    {
+      "path": "src/main/java/dev/maicra/pickrelay/session/StopReason.java",
+      "sha256": "4239a8b427612f5e408308f8069a7d44333ce24bbf3f25c4479cfc61f9630025",
+      "bytes": 307
+    },
+    {
+      "path": "src/main/resources/assets/pickrelay/lang/en_us.json",
+      "sha256": "cada0336ed37e23ddd9be8b381fc0f9a704cfd0f04c22f72e8c117fae6cf2d60",
+      "bytes": 5099
+    },
+    {
+      "path": "src/main/resources/assets/pickrelay/lang/es_cl.json",
+      "sha256": "5f31c11e66655e9ec548e5f075233afd7d5ae1f410ce806577f5c8ed518942eb",
+      "bytes": 5393
+    },
+    {
+      "path": "src/main/resources/assets/pickrelay/lang/es_es.json",
+      "sha256": "ef36efc6904a44190025fc275d094585b2f0ec283385b67ca4a93680dcb86194",
+      "bytes": 5400
+    },
+    {
+      "path": "src/main/resources/pack.mcmeta",
+      "sha256": "4dcf0fb9d90a54e60f3d2b0db1bb2c0660d1b919792d021115802982c91a2eba",
+      "bytes": 92
+    },
+    {
+      "path": "src/main/resources/pickrelay.mixins.json",
+      "sha256": "4f72ac6dcbd3001e72f6cddab335e40625be99ea8f5ef414f2d383089e52272d",
+      "bytes": 254
+    },
+    {
+      "path": "src/main/templates/META-INF/neoforge.mods.toml",
+      "sha256": "866f114bd17671f170ee5564e68435f2d5ed0d2004a2ff1842a4a1ef1d4f0ee2",
+      "bytes": 523
+    }
+  ]
+}
