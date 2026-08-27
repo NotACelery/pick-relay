@@ -11,14 +11,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Tracks queued tools by their RelayEntry identity instead of treating the
- * inventory slot as the identity itself.
- *
- * The UUID lives only in Pick Relay's local queue model; ItemStacks are never
- * mutated with hidden NBT/components. A current slot is therefore just a
- * locator that may be repaired whenever the player moves the tool.
- */
+/** Tracks queue entries across inventory moves without modifying ItemStack data. */
 public final class ToolTracker {
     private ToolTracker() {
     }
@@ -49,14 +42,7 @@ public final class ToolTracker {
         };
     }
 
-    /**
-     * Reconciles all pending/active entries against the player's current 36
-     * inventory slots. Existing valid locations are kept first, then moved
-     * tools are reassigned one-to-one to unclaimed matching slots.
-     *
-     * Missing pending entries are deliberately left unresolved; the session
-     * will mark them SKIPPED when their turn arrives instead of stopping.
-     */
+    /** Reconciles pending and active entries to unique matching inventory slots. */
     public static void reconcileQueue(RelayQueue queue, LocalPlayer player) {
         Set<Integer> claimed = new HashSet<>();
         List<RelayEntry> unresolved = new ArrayList<>();
@@ -87,7 +73,6 @@ public final class ToolTracker {
         }
     }
 
-    /** Resolve one entry after the global reconciliation pass. */
     public static int resolveSlot(RelayEntry entry, LocalPlayer player, Set<Integer> excludedSlots) {
         int current = entry.currentInventorySlot();
         if (isInventorySlot(current)
@@ -112,9 +97,7 @@ public final class ToolTracker {
 
     private static int findMatchingUnclaimedSlot(RelayEntry entry, LocalPlayer player, Set<Integer> claimed) {
         if (entry.status() == RelayEntryStatus.ACTIVE) {
-            // When an active tool was manually moved, prefer its last exact live
-            // snapshot (including its current damage). This prevents a pristine,
-            // otherwise identical pending tool from being mistaken for it.
+            // Prefer the last exact live snapshot to avoid matching an identical pending tool.
             for (int slot = 0; slot < 36; slot++) {
                 if (claimed.contains(slot)) {
                     continue;
@@ -125,8 +108,7 @@ public final class ToolTracker {
                 }
             }
 
-            // Fallback for unusual external component/damage changes: only accept
-            // a broad active fingerprint when exactly one candidate exists.
+            // A broad active fingerprint is safe only when the match is unique.
             int uniqueCandidate = -1;
             for (int slot = 0; slot < 36; slot++) {
                 if (claimed.contains(slot)) {

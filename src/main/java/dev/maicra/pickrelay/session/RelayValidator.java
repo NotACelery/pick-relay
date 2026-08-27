@@ -35,9 +35,6 @@ public final class RelayValidator {
         for (RelayEntry entry : queue.entries()) {
             int slot = entry.currentInventorySlot();
             if (slot < 0 || slot >= 36) {
-                // A missing queued tool is not a fatal validation error anymore.
-                // If it is still absent when its turn arrives, runtime marks it
-                // SKIPPED and continues with the next RelayEntry.
                 continue;
             }
 

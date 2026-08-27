@@ -128,8 +128,7 @@ public final class RelayEntry {
         if (currentDamage > lastObservedDamage) {
             durabilityConsumed += currentDamage - lastObservedDamage;
         }
-        // If Mending or another mechanic repairs the tool, consumption already
-        // observed stays counted; only the baseline for future damage changes.
+        // Repairs move the baseline without erasing durability already consumed.
         lastObservedDamage = currentDamage;
         rememberLiveStack(liveStack);
     }

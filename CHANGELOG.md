@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.1
+
+Hotfix for the Pick Relay configuration screen.
+
+### Fixed
+
+- The player inventory now moves beside the relay queue when vertical space is limited and enough horizontal space is available.
+- Selected Tool details and session controls remain below the queue/inventory pair instead of being pushed off-screen.
+- Compact-window validation and controls remain readable without changing queue, relay or mining behaviour.
+
 ## 1.0.0
 
 Initial public-ready release of Pick Relay.

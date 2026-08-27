@@ -126,7 +126,6 @@ public final class InventoryRelayManager {
         if (previousEntry != null && isHotbarSlot(previousEntry.currentInventorySlot())) {
             return previousEntry.currentInventorySlot();
         }
-        // Explicit design fallback: hotbar slot 1 (inventory index 0).
         return 0;
     }
 

@@ -26,6 +26,7 @@ import net.neoforged.neoforge.client.gui.widget.ExtendedSlider;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -36,6 +37,9 @@ public final class PickRelayScreen extends Screen {
     private static final int SLOT_SIZE = 18;
     private static final int GRID_WIDTH = COLUMNS * SLOT_SIZE;
     private static final int QUEUE_HEIGHT = QUEUE_ROWS * SLOT_SIZE;
+    private static final int SIDE_BY_SIDE_GRID_GAP = 24;
+    private static final int LAYOUT_BOTTOM_MARGIN = 30;
+    private static final int SIDE_BY_SIDE_MIN_WIDTH = GRID_WIDTH * 2 + SIDE_BY_SIDE_GRID_GAP + 12;
     private static final double QUEUE_DRAG_THRESHOLD_SQ = 16.0;
 
     private final RelayQueue queue = PickRelayController.queue();
@@ -402,9 +406,6 @@ public final class PickRelayScreen extends Screen {
         actionButton.setMessage(actionLabel());
         actionButton.active = PickRelayController.isActive() || PickRelayController.canStart();
         clearQueueButton.active = editable && !queue.isEmpty();
-        clearQueueButton.visible = true;
-        closeButton.active = true;
-        closeButton.visible = true;
 
         singleBlockButton.setMessage(miningModeLabel(RelayMiningMode.SINGLE_BLOCK));
         lineMiningButton.setMessage(miningModeLabel(RelayMiningMode.LINE_MINING));
@@ -469,7 +470,7 @@ public final class PickRelayScreen extends Screen {
     }
 
     private void renderQueue(GuiGraphics gui, int mouseX, int mouseY) {
-        int startX = gridStartX();
+        int startX = queueGridStartX();
         int startY = queueStartY();
         Set<UUID> invalid = PickRelayController.canEditQueue()
                 ? PickRelayController.validation().invalidEntries()
@@ -582,10 +583,10 @@ public final class PickRelayScreen extends Screen {
 
     private void renderPlayerInventory(GuiGraphics gui, int mouseX, int mouseY) {
         Minecraft minecraft = Minecraft.getInstance();
-        int startX = gridStartX();
+        int startX = inventoryGridStartX();
         int startY = inventoryStartY();
 
-        gui.drawCenteredString(font, Component.translatable("screen.pickrelay.inventory"), width / 2, inventoryLabelY(), 0xC0C0C0);
+        gui.drawCenteredString(font, Component.translatable("screen.pickrelay.inventory"), inventoryHeaderCenterX(), inventoryLabelY(), 0xC0C0C0);
 
         if (minecraft.player == null) {
             return;
@@ -630,20 +631,20 @@ public final class PickRelayScreen extends Screen {
         return queue.containsInventorySlot(inventorySlot);
     }
 
-
     private void renderSessionModeHeader(GuiGraphics gui) {
         gui.drawCenteredString(font, Component.translatable("screen.pickrelay.session_mode"), width / 2, sessionModeHeaderY(), 0xC0C0C0);
     }
 
     private void renderQueueHeader(GuiGraphics gui) {
+        int centerX = queueHeaderCenterX();
         if (compactVerticalLayout() && PickRelayController.canEditQueue() && !queue.isEmpty()) {
             RelayValidationResult validation = PickRelayController.validation();
             if (!validation.valid() && !validation.message().getString().isEmpty()) {
-                gui.drawCenteredString(font, validation.message(), width / 2, 21, 0xFFFF7777);
+                gui.drawCenteredString(font, validation.message(), centerX, 21, 0xFFFF7777);
                 return;
             }
         }
-        gui.drawCenteredString(font, queueHeader(), width / 2, 21, 0xC0C0C0);
+        gui.drawCenteredString(font, queueHeader(), centerX, 21, 0xC0C0C0);
     }
 
     private void renderValidation(GuiGraphics gui) {
@@ -678,7 +679,7 @@ public final class PickRelayScreen extends Screen {
 
         QueueDropZone zone = queueDropZone(mouseX, targetCell);
         if (zone == QueueDropZone.SWAP) {
-            int x = gridStartX() + (targetCell % COLUMNS) * SLOT_SIZE;
+            int x = queueGridStartX() + (targetCell % COLUMNS) * SLOT_SIZE;
             int y = queueStartY() + (targetCell / COLUMNS) * SLOT_SIZE;
             drawOutline(gui, x, y, 0xFFFFFFFF);
         } else {
@@ -687,7 +688,7 @@ public final class PickRelayScreen extends Screen {
     }
 
     private void drawInsertionMarker(GuiGraphics gui, int targetCell, boolean after) {
-        int x = gridStartX() + (targetCell % COLUMNS) * SLOT_SIZE;
+        int x = queueGridStartX() + (targetCell % COLUMNS) * SLOT_SIZE;
         int y = queueStartY() + (targetCell / COLUMNS) * SLOT_SIZE;
         int markerX = after ? x + SLOT_SIZE - 1 : x;
         gui.fill(markerX, y, markerX + 2, y + SLOT_SIZE, 0xFFFFFFFF);
@@ -804,21 +805,20 @@ public final class PickRelayScreen extends Screen {
         };
     }
 
-    private java.util.Optional<RelayEntry> selectedEntry() {
+    private Optional<RelayEntry> selectedEntry() {
         return queue.findById(selectedEntryId);
     }
 
     private int queueCellAt(double mouseX, double mouseY) {
-        return gridCellAt(mouseX, mouseY, queueStartY(), QUEUE_ROWS);
+        return gridCellAt(mouseX, mouseY, queueGridStartX(), queueStartY(), QUEUE_ROWS);
     }
 
     private int inventorySlotAt(double mouseX, double mouseY) {
-        int displayIndex = gridCellAt(mouseX, mouseY, inventoryStartY(), INVENTORY_ROWS);
+        int displayIndex = gridCellAt(mouseX, mouseY, inventoryGridStartX(), inventoryStartY(), INVENTORY_ROWS);
         return displayIndex < 0 ? -1 : inventorySlotForDisplayIndex(displayIndex);
     }
 
-    private int gridCellAt(double mouseX, double mouseY, int startY, int rows) {
-        int startX = gridStartX();
+    private int gridCellAt(double mouseX, double mouseY, int startX, int startY, int rows) {
         if (mouseX < startX || mouseX >= startX + GRID_WIDTH || mouseY < startY || mouseY >= startY + rows * SLOT_SIZE) {
             return -1;
         }
@@ -829,7 +829,7 @@ public final class PickRelayScreen extends Screen {
     }
 
     private QueueDropZone queueDropZone(double mouseX, int targetCell) {
-        int cellX = gridStartX() + (targetCell % COLUMNS) * SLOT_SIZE;
+        int cellX = queueGridStartX() + (targetCell % COLUMNS) * SLOT_SIZE;
         double localX = mouseX - cellX;
         if (localX < SLOT_SIZE * 0.25) {
             return QueueDropZone.INSERT_BEFORE;
@@ -844,8 +844,27 @@ public final class PickRelayScreen extends Screen {
         return displayIndex < 27 ? displayIndex + 9 : displayIndex - 27;
     }
 
-    private int gridStartX() {
+    private int queueGridStartX() {
+        if (sideBySideInventoryLayout()) {
+            int contentWidth = GRID_WIDTH * 2 + SIDE_BY_SIDE_GRID_GAP;
+            return (width - contentWidth) / 2;
+        }
         return (width - GRID_WIDTH) / 2;
+    }
+
+    private int inventoryGridStartX() {
+        if (sideBySideInventoryLayout()) {
+            return queueGridStartX() + GRID_WIDTH + SIDE_BY_SIDE_GRID_GAP;
+        }
+        return (width - GRID_WIDTH) / 2;
+    }
+
+    private int queueHeaderCenterX() {
+        return queueGridStartX() + GRID_WIDTH / 2;
+    }
+
+    private int inventoryHeaderCenterX() {
+        return inventoryGridStartX() + GRID_WIDTH / 2;
     }
 
     private int queueStartY() {
@@ -888,20 +907,40 @@ public final class PickRelayScreen extends Screen {
         return width / 2 + 48;
     }
 
-    private int inventoryLabelY() {
+    private int normalInventoryLabelY() {
         return detailsControlsY() + 30;
     }
 
+    private int normalInventoryStartY() {
+        return normalInventoryLabelY() + 12;
+    }
+
+    private int inventoryLabelY() {
+        return sideBySideInventoryLayout() ? 21 : normalInventoryLabelY();
+    }
+
     private int inventoryStartY() {
-        return inventoryLabelY() + 12;
+        return sideBySideInventoryLayout() ? queueStartY() : normalInventoryStartY();
+    }
+
+    private int normalSessionModeHeaderY() {
+        return normalInventoryStartY() + INVENTORY_ROWS * SLOT_SIZE + 12;
     }
 
     private int sessionModeHeaderY() {
-        return inventoryStartY() + INVENTORY_ROWS * SLOT_SIZE + 12;
+        return sideBySideInventoryLayout() ? detailsControlsY() + 30 : normalSessionModeHeaderY();
+    }
+
+    private int normalActionButtonY() {
+        return normalSessionModeHeaderY() + 10 + 28;
+    }
+
+    private boolean sideBySideInventoryLayout() {
+        return width >= SIDE_BY_SIDE_MIN_WIDTH && height < normalActionButtonY() + LAYOUT_BOTTOM_MARGIN;
     }
 
     private boolean compactVerticalLayout() {
-        return height < actionButtonY() + 30;
+        return height < actionButtonY() + LAYOUT_BOTTOM_MARGIN;
     }
 
     private int actionButtonWidth() {
@@ -922,10 +961,6 @@ public final class PickRelayScreen extends Screen {
 
     private int miningModeButtonsY() {
         return sessionModeHeaderY() + 10;
-    }
-
-    private int lineMiningButtonY() {
-        return miningModeButtonsY();
     }
 
     private int actionRowTotalWidth() {
@@ -996,10 +1031,6 @@ public final class PickRelayScreen extends Screen {
         resetInventoryDrag();
         resetQueueDrag();
 
-        // The configured queue is intentionally temporary. Closing Pick Relay
-        // before a session starts discards the whole plan so reopening the GUI
-        // always begins clean. During ACTIVE the queue is the immutable runtime
-        // session and must remain untouched while the screen is closed.
         if (!PickRelayController.isActive()) {
             queue.clear();
             selectedEntryId = null;

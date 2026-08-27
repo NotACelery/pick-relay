@@ -153,13 +153,13 @@ Linux/macOS:
 The expected release artifact is:
 
 ```text
-build/libs/pickrelay-1.21.1-1.0.0.jar
+build/libs/pickrelay-1.21.1-1.0.1.jar
 ```
 
 ## Documentation
 
 - [`docs/Pick-Relay-Especificacion.md`](docs/Pick-Relay-Especificacion.md) — final 1.0.0 functional/technical specification.
-- [`docs/TESTING-1.0.0.md`](docs/TESTING-1.0.0.md) — final regression checklist.
+- [`docs/TESTING-1.0.1.md`](docs/TESTING-1.0.1.md) — 1.0.1 hotfix regression checklist.
 - [`docs/PUBLISHING-ROADMAP.md`](docs/PUBLISHING-ROADMAP.md) — release preparation for Modrinth and CurseForge.
 
 ## Debug logging

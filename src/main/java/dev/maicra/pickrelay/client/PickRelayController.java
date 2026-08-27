@@ -60,7 +60,6 @@ public final class PickRelayController {
         return !isActive() && state != RelayState.STARTING && state != RelayState.STOPPING;
     }
 
-
     public static int activeIndex() {
         return activeIndex;
     }
@@ -75,7 +74,6 @@ public final class PickRelayController {
         }
     }
 
-
     public static boolean isWaitingForWorkBlock() {
         return waitingForWorkBlock;
     }
@@ -87,12 +85,7 @@ public final class PickRelayController {
         return CONFIGURED_QUEUE.get(activeIndex);
     }
 
-    /**
-     * True only while Pick Relay itself is synchronously executing vanilla's
-     * start/continue attack method. The block-destroy mixin uses this as a
-     * provenance guard so unrelated client mods cannot accidentally advance
-     * a Blocks Broken budget while a relay session is active.
-     */
+    /** True while a block-destroy call belongs to the active Pick Relay mining cycle. */
     public static boolean isControlledAttackInvocation() {
         return controlledAttackInvocation;
     }
@@ -298,10 +291,7 @@ public final class PickRelayController {
         preserveTransitionRequested = false;
         holdControlledAttack();
 
-        // A successful block break can consume the final safe durability inside
-        // continueDestroyBlock(). Re-check immediately in the same client tick
-        // instead of waiting for the next tick, otherwise a fast generator can
-        // briefly leave an at-1 tool armed for another mining cycle.
+        // Mining can consume the last safe durability, so re-check in the same tick.
         if (!isActive() || activeEntry() != entry || entry.status() != RelayEntryStatus.ACTIVE) {
             return;
         }
@@ -319,9 +309,7 @@ public final class PickRelayController {
             if (entry.preserveAtOne()
                     && afterAttack.isDamageableItem()
                     && MiningProgressTracker.remainingDurability(afterAttack) <= 3) {
-                // Near the break threshold, give the client inventory a couple
-                // of ticks to absorb an authoritative server damage update before
-                // allowing another use. This only affects the final few points.
+                // Allow the authoritative damage update to settle near the break threshold.
                 preserveNearBreakCooldownTicks = Math.max(preserveNearBreakCooldownTicks, 2);
             }
         }
@@ -485,8 +473,6 @@ public final class PickRelayController {
 
             int slot = tracked.currentInventorySlot();
             if (slot < 0) {
-                // Missing pending tools are allowed and will be SKIPPED when their
-                // turn arrives. The active entry is handled earlier in tick().
                 continue;
             }
             if (slot >= 36 || !occupiedTrackedSlots.add(slot)) {
@@ -535,9 +521,7 @@ public final class PickRelayController {
         BlockHitResult blockHit = currentWorkBlock(minecraft);
         if (blockHit == null) {
             waitingForWorkBlock = true;
-            // Temporary air / entities / out-of-reach targets are not a stop condition.
-            // Keep the relay session armed and resume automatically when the camera
-            // points at a valid block again, matching THE Pick's validated behavior.
+            // No valid work block pauses mining without ending the session.
             minecraft.gameMode.stopDestroyBlock();
             return;
         }
@@ -572,15 +556,7 @@ public final class PickRelayController {
         }
     }
 
-    /**
-     * Resolves the current work block according to the selected session mode.
-     *
-     * LINE_MINING follows the current crosshair every cycle, matching THE Pick.
-     * SINGLE_BLOCK pins the coordinate captured at Start and only mines while the
-     * crosshair is currently resolving that same coordinate. Looking elsewhere
-     * never cancels the session; it simply pauses mining until the pinned block is
-     * aimed at again.
-     */
+    /** Resolves the current work block according to the active session mode. */
     private static BlockHitResult currentWorkBlock(Minecraft minecraft) {
         BlockHitResult blockHit = raycastCurrentBlock(minecraft);
         if (blockHit == null) {

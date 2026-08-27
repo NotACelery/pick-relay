@@ -1,6 +1,6 @@
 # Build status
 
-Release: **1.0.0**
+Release: **1.0.1**
 
 ## Target
 
@@ -27,6 +27,7 @@ The complete 1.0 feature set has been built and validated in Minecraft during de
 - supported axes, shovels and hoes;
 - movement, death, disconnect and dimension safety;
 - GUI lifecycle and active-session inspection.
+- responsive compact-height layout with the player inventory moved beside the relay queue when horizontal space is available.
 
 The first successful external Windows build used Java 21 with Gradle 8.10.2. Java 17, 21 and 25 may coexist on the same machine; Pick Relay's helper only selects Java 21 for this project build.
 
@@ -35,13 +36,13 @@ The first successful external Windows build used Java 21 with Gradle 8.10.2. Jav
 Expected output:
 
 ```text
-build/libs/pickrelay-1.21.1-1.0.0.jar
+build/libs/pickrelay-1.21.1-1.0.1.jar
 ```
 
-Before publishing, perform the short regression pass in `docs/TESTING-1.0.0.md` against the exact final JAR.
+Before publishing, perform the short regression pass in `docs/TESTING-1.0.1.md` against the exact final JAR.
 
 ## Visual identity
 
-- The official 1.0.0 icon is bundled as `src/main/resources/pick-relay-icon.png`.
+- The official Pick Relay icon is bundled as `src/main/resources/pick-relay-icon.png`.
 - NeoForge metadata references it through `logoFile="pick-relay-icon.png"` with `logoBlur=false` so the pixel art stays crisp in mod-list UIs.
 - The same image is the canonical project icon to upload to Modrinth and CurseForge.
