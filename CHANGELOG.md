@@ -35,6 +35,7 @@ Initial public-ready release of Pick Relay.
 
 ### Safety and UX
 
+- Added the official hand-made pixel-art Pick Relay icon and wired it into NeoForge mod metadata.
 - Added position/dimension anchoring and automatic stop on displacement, death, disconnect or unsafe relay state.
 - Added non-pausing Pick Relay GUI with read-only inspection during active sessions.
 - Added event-style HUD above the hotbar with tool/progress/waiting status.

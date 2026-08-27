@@ -6,12 +6,12 @@ Objetivo: preparar una publicación consistente en **Modrinth** y **CurseForge**
 
 Pendiente principal antes de publicar:
 
-- [ ] Crear icono final hecho a mano/no generado por IA.
-- [ ] Exportar versión cuadrada de alta calidad para las páginas del proyecto.
-- [ ] Preparar versión apta para incluir dentro del JAR/lista de mods si se desea.
+- [x] Crear icono final hecho a mano/no generado por IA.
+- [x] Exportar versión cuadrada de alta calidad para las páginas del proyecto (`src/main/resources/pick-relay-icon.png`).
+- [x] Incluir el mismo icono dentro del JAR/lista de mods mediante `logoFile="pick-relay-icon.png"` y `logoBlur=false`.
 - [ ] Verificar legibilidad del icono a tamaños pequeños.
 
-No publicar usando un icono provisional si ya se decidió que la identidad visual final será manual.
+El icono oficial 1.0.0 es `src/main/resources/pick-relay-icon.png`. Usar este mismo archivo como imagen del proyecto en Modrinth y CurseForge para mantener una identidad visual consistente.
 
 ## Fase 2 — Congelar el artefacto 1.0.0
 

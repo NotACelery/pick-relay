@@ -1,5 +1,9 @@
 # Pick Relay
 
+<p align="center">
+  <img src="src/main/resources/pick-relay-icon.png" alt="Pick Relay icon" width="160">
+</p>
+
 **Automate the grind. Schedule your tools.**
 
 Pick Relay is a client-side Minecraft mod for planning and executing ordered tool-relay sessions. Instead of choosing the "best" tool automatically, Pick Relay uses the exact tools, order, limits and safety rules configured by the player.

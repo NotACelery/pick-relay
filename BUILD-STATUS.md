@@ -39,3 +39,9 @@ build/libs/pickrelay-1.21.1-1.0.0.jar
 ```
 
 Before publishing, perform the short regression pass in `docs/TESTING-1.0.0.md` against the exact final JAR.
+
+## Visual identity
+
+- The official 1.0.0 icon is bundled as `src/main/resources/pick-relay-icon.png`.
+- NeoForge metadata references it through `logoFile="pick-relay-icon.png"` with `logoBlur=false` so the pixel art stays crisp in mod-list UIs.
+- The same image is the canonical project icon to upload to Modrinth and CurseForge.

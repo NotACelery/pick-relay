@@ -4,14 +4,14 @@
   "neo_version": "21.1.235",
   "files": {
     ".gitignore": "885e8154f81fd774eb00ecce77ffdcfd7ae6e540084f5b283eb21f086f5d79c2",
-    "BUILD-STATUS.md": "857eed9f8ccf63d2e09e4feb5206259551d134174ae4f8bd50d37c130d9d6077",
-    "CHANGELOG.md": "0792ce8288a59bc6025e42617cff6ce54f6cd036ad53f359b265d9108f02d29c",
-    "README.md": "413b1047a375a09e5769319f32db37b46303405130b2edc4eded4a25ac03453a",
+    "BUILD-STATUS.md": "f91bc6ed4087440f77b75c94d8afae716b884594959593b49388f337c78de41e",
+    "CHANGELOG.md": "3ba03491cfe4edadf66763e28165fcf9275c55fa91b2152fe29d06d957577ec2",
+    "README.md": "2617675b261a2c5af6bd540ec0640befa47a5979bfcc420eb78f013bb1db4fed",
     "build.bat": "698e6ed42d51da1fdaa453e026237385d8b48bfa83a17d00f117ddc15952558b",
     "build.gradle": "fc36eb7d9d69dc68e42bf2f29dd4f71b7b55fd8557204cdc2e4d08ea76bbeec5",
     "build.sh": "db9f878f88987c2f7bbfca28218176f47139b066d1180bb59dfc5c8658cd9d78",
     "cleanup-repo.bat": "3768bb44e15a85f24a3543069d90f38728661449e0f63c62a8916940216e489f",
-    "docs/PUBLISHING-ROADMAP.md": "1d875673d166718071ca30d05e3fb9ad9ad366f085ab990a9929e3b356d6fac9",
+    "docs/PUBLISHING-ROADMAP.md": "f0e4e3df284d9336533e6ec7359c48f996664354dc94d77cd22a264c999db142",
     "docs/Pick-Relay-Especificacion.md": "ba1628c5e8bd685beccc1e18629bc3b202a179aa5e5c1c56519170b1a210e299",
     "docs/TESTING-1.0.0.md": "d6efd26f67f5c51640054ccdf830b496f00107d4d9d6e1b6f68351659144b92e",
     "gradle.properties": "1cbc33b0d7ee74b3ddfec6fa6e2104140eddc5901b2245bdd21ec267a5700af4",
@@ -44,8 +44,9 @@
     "src/main/resources/assets/pickrelay/lang/es_cl.json": "ddfdf7396edada2286a7f112226ed9a6218cd54be785205387f40b4bb29b78f4",
     "src/main/resources/assets/pickrelay/lang/es_es.json": "d5c34367d07c9fc4d5c0e29236b077fd0e45c20ba7c8080f36b8901fb9bac078",
     "src/main/resources/pack.mcmeta": "4dcf0fb9d90a54e60f3d2b0db1bb2c0660d1b919792d021115802982c91a2eba",
+    "src/main/resources/pick-relay-icon.png": "107fce86d3c2c2c77528813ae002e73cc0b9e49ae647f43932b9cc1ffaf57e5f",
     "src/main/resources/pickrelay.mixins.json": "4f72ac6dcbd3001e72f6cddab335e40625be99ea8f5ef414f2d383089e52272d",
-    "src/main/templates/META-INF/neoforge.mods.toml": "866f114bd17671f170ee5564e68435f2d5ed0d2004a2ff1842a4a1ef1d4f0ee2",
+    "src/main/templates/META-INF/neoforge.mods.toml": "c6f5680f6aff8358773297c3605bd0ab97d6d5a9d6bf111b38c48259ed438af2",
     "tools/find-java21.ps1": "369110159ecd4d9e1037d73b0a4eeb181a49a1dfadd39242f8db6166aea25b53"
   }
 }
