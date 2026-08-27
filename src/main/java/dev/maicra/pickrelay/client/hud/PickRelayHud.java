@@ -55,7 +55,7 @@ public final class PickRelayHud {
         }
 
         int x = gui.guiWidth() / 2;
-        int y = gui.guiHeight() / 2 + 28;
+        int y = gui.guiHeight() - 68;
         gui.drawCenteredString(minecraft.font, text, x, y, 0xFFFFFF);
     }
 }

@@ -31,7 +31,6 @@ public final class PickRelayController {
     private static final SafetyMonitor SAFETY = new SafetyMonitor();
 
     private static RelayState state = RelayState.IDLE;
-    private static StopReason lastStopReason;
     private static int activeIndex = -1;
     private static int transitionCooldownTicks;
     private static boolean controlledAttackInvocation;
@@ -39,6 +38,8 @@ public final class PickRelayController {
     private static RelayMiningMode sessionMiningMode;
     private static BlockPos singleBlockTarget;
     private static boolean waitingForWorkBlock;
+    private static boolean preserveTransitionRequested;
+    private static int preserveNearBreakCooldownTicks;
 
     private PickRelayController() {
     }
@@ -59,9 +60,6 @@ public final class PickRelayController {
         return !isActive() && state != RelayState.STARTING && state != RelayState.STOPPING;
     }
 
-    public static StopReason lastStopReason() {
-        return lastStopReason;
-    }
 
     public static int activeIndex() {
         return activeIndex;
@@ -77,9 +75,6 @@ public final class PickRelayController {
         }
     }
 
-    public static BlockPos singleBlockTarget() {
-        return singleBlockTarget;
-    }
 
     public static boolean isWaitingForWorkBlock() {
         return waitingForWorkBlock;
@@ -151,11 +146,12 @@ public final class PickRelayController {
         }
 
         state = RelayState.STARTING;
-        lastStopReason = null;
         activeIndex = -1;
         transitionCooldownTicks = 0;
         controlledAttackInvocation = false;
         waitingForWorkBlock = false;
+        preserveTransitionRequested = false;
+        preserveNearBreakCooldownTicks = 0;
         sessionMiningMode = configuredMiningMode;
         singleBlockTarget = sessionMiningMode == RelayMiningMode.SINGLE_BLOCK
                 ? initialWorkBlock.getBlockPos().immutable()
@@ -184,7 +180,6 @@ public final class PickRelayController {
         if (wasRunning) {
             state = RelayState.STOPPING;
         }
-        lastStopReason = reason;
         releaseControlledAttack();
         controlledAttackInvocation = false;
         SAFETY.clear();
@@ -193,6 +188,8 @@ public final class PickRelayController {
         sessionMiningMode = null;
         singleBlockTarget = null;
         waitingForWorkBlock = false;
+        preserveTransitionRequested = false;
+        preserveNearBreakCooldownTicks = 0;
 
         if (wasRunning || reason == StopReason.DISCONNECT || reason == StopReason.DIMENSION_CHANGE) {
             CONFIGURED_QUEUE.clear();
@@ -236,15 +233,43 @@ public final class PickRelayController {
             return;
         }
 
+        if (preserveNearBreakCooldownTicks > 0) {
+            releaseControlledAttack();
+            preserveNearBreakCooldownTicks--;
+            return;
+        }
+
         ItemStack liveStack = ToolTracker.liveStack(entry, player);
         if (liveStack.isEmpty()) {
-            if (entry.status() == RelayEntryStatus.BROKEN) {
-                RelayDebug.log("Entry {} was confirmed broken by Pick Relay", activeIndex + 1);
+            if (entry.status() == RelayEntryStatus.BROKEN || shouldTreatMissingActiveToolAsBroken(entry)) {
+                if (entry.status() != RelayEntryStatus.BROKEN) {
+                    entry.setStatus(RelayEntryStatus.BROKEN);
+                    RelayDebug.log("Active entry {} missing from its slot after reaching critical durability; treating it as broken", activeIndex + 1);
+                } else {
+                    RelayDebug.log("Entry {} was confirmed broken by Pick Relay", activeIndex + 1);
+                }
                 advance(entry);
-            } else {
-                RelayDebug.log("Active entry {} disappeared without a relay-confirmed break", activeIndex + 1);
-                stop(StopReason.TOOL_INVALID);
+                return;
             }
+
+            int relocated = ToolTracker.resolveSlot(entry, player, Set.of());
+            if (relocated < 0) {
+                entry.setStatus(RelayEntryStatus.SKIPPED);
+                RelayDebug.log("Active entry {} is no longer in the player inventory; skipping it", activeIndex + 1);
+                advance(entry);
+                return;
+            }
+            RelayDebug.log("Relocated active entry {} to inventory slot {}", activeIndex + 1, relocated);
+            liveStack = ToolTracker.liveStack(entry, player);
+        }
+
+        ToolTracker.reconcileQueue(CONFIGURED_QUEUE, player);
+        liveStack = ToolTracker.liveStack(entry, player);
+
+        if (entry.currentInventorySlot() < 0 || liveStack.isEmpty() || !ToolTracker.matchesExpectedSlot(entry, player)) {
+            entry.setStatus(RelayEntryStatus.SKIPPED);
+            RelayDebug.log("Active entry {} no longer has a resolvable tool identity; skipping it", activeIndex + 1);
+            advance(entry);
             return;
         }
 
@@ -253,36 +278,53 @@ public final class PickRelayController {
             stop(integrityReason);
             return;
         }
-
-        if (!ToolTracker.matchesExpectedSlot(entry, player)) {
-            stop(StopReason.TOOL_INVALID);
-            return;
-        }
-        if (entry.currentInventorySlot() < 0 || entry.currentInventorySlot() >= 9) {
-            stop(StopReason.INVENTORY_DESYNC);
-            return;
+        if (entry.currentInventorySlot() >= 9) {
+            if (!InventoryRelayManager.equip(CONFIGURED_QUEUE, entry, null, player)) {
+                entry.setStatus(RelayEntryStatus.SKIPPED);
+                RelayDebug.log("Could not re-equip relocated active entry {}; skipping it", activeIndex + 1);
+                advance(entry);
+                return;
+            }
+            liveStack = ToolTracker.liveStack(entry, player);
         }
 
         InventoryRelayManager.enforceSelected(entry, player);
         PROGRESS.observe(entry, liveStack);
 
-        MiningProgressTracker.Completion completion = PROGRESS.completion(entry, liveStack);
-        if (completion == MiningProgressTracker.Completion.PRESERVED) {
-            entry.rememberLiveStack(liveStack);
-            entry.setStatus(RelayEntryStatus.PRESERVED);
-            RelayDebug.log("Entry {} preserved at {} remaining durability", activeIndex + 1, MiningProgressTracker.remainingDurability(liveStack));
-            advance(entry);
-            return;
-        }
-        if (completion == MiningProgressTracker.Completion.TARGET_REACHED) {
-            entry.rememberLiveStack(liveStack);
-            entry.setStatus(RelayEntryStatus.COMPLETED);
-            RelayDebug.log("Entry {} reached its {} target ({}/{})", activeIndex + 1, entry.workMode(), entry.progress(), entry.workTarget());
-            advance(entry);
+        if (finishEntryIfComplete(entry, liveStack)) {
             return;
         }
 
+        preserveTransitionRequested = false;
         holdControlledAttack();
+
+        // A successful block break can consume the final safe durability inside
+        // continueDestroyBlock(). Re-check immediately in the same client tick
+        // instead of waiting for the next tick, otherwise a fast generator can
+        // briefly leave an at-1 tool armed for another mining cycle.
+        if (!isActive() || activeEntry() != entry || entry.status() != RelayEntryStatus.ACTIVE) {
+            return;
+        }
+
+        ItemStack afterAttack = ToolTracker.liveStack(entry, player);
+        if (!afterAttack.isEmpty() && ToolTracker.matchesExpectedSlot(entry, player)) {
+            PROGRESS.observe(entry, afterAttack);
+            if (preserveTransitionRequested || finishEntryIfComplete(entry, afterAttack)) {
+                if (preserveTransitionRequested && entry.status() == RelayEntryStatus.ACTIVE) {
+                    preserveEntry(entry, afterAttack);
+                }
+                return;
+            }
+
+            if (entry.preserveAtOne()
+                    && afterAttack.isDamageableItem()
+                    && MiningProgressTracker.remainingDurability(afterAttack) <= 3) {
+                // Near the break threshold, give the client inventory a couple
+                // of ticks to absorb an authoritative server damage update before
+                // allowing another use. This only affects the final few points.
+                preserveNearBreakCooldownTicks = Math.max(preserveNearBreakCooldownTicks, 2);
+            }
+        }
     }
 
     public static int captureActiveDamageBeforeDestroy() {
@@ -317,11 +359,57 @@ public final class PickRelayController {
                 int damageAfter = after.getDamageValue();
                 entry.recordDurabilityConsumption(Math.max(0, damageAfter - damageBefore), damageAfter);
                 entry.rememberLiveStack(after);
+
+                if (entry.preserveAtOne()) {
+                    int remaining = MiningProgressTracker.remainingDurability(after);
+                    if (remaining <= 1) {
+                        preserveTransitionRequested = true;
+                    } else if (remaining <= 3) {
+                        preserveNearBreakCooldownTicks = Math.max(preserveNearBreakCooldownTicks, 2);
+                    }
+                }
             }
         }
 
         RelayDebug.log("Entry {} destroyed block {} (blocks={}, durability={})",
                 activeIndex + 1, pos, entry.blocksBroken(), entry.durabilityConsumed());
+    }
+
+
+    private static boolean finishEntryIfComplete(RelayEntry entry, ItemStack liveStack) {
+        MiningProgressTracker.Completion completion = PROGRESS.completion(entry, liveStack);
+        if (completion == MiningProgressTracker.Completion.PRESERVED) {
+            preserveEntry(entry, liveStack);
+            return true;
+        }
+        if (completion == MiningProgressTracker.Completion.TARGET_REACHED) {
+            entry.rememberLiveStack(liveStack);
+            entry.setStatus(RelayEntryStatus.COMPLETED);
+            RelayDebug.log("Entry {} reached its {} target ({}/{})", activeIndex + 1, entry.workMode(), entry.progress(), entry.workTarget());
+            advance(entry);
+            return true;
+        }
+        return false;
+    }
+
+    private static void preserveEntry(RelayEntry entry, ItemStack liveStack) {
+        releaseControlledAttack();
+        entry.rememberLiveStack(liveStack);
+        entry.setStatus(RelayEntryStatus.PRESERVED);
+        preserveTransitionRequested = false;
+        preserveNearBreakCooldownTicks = 0;
+        RelayDebug.log("Entry {} preserved at {} remaining durability", activeIndex + 1, MiningProgressTracker.remainingDurability(liveStack));
+        advance(entry);
+    }
+
+    private static boolean shouldTreatMissingActiveToolAsBroken(RelayEntry entry) {
+        ItemStack lastKnown = entry.lastKnownSnapshot();
+        if (!entry.snapshot().isDamageableItem() || lastKnown.isEmpty() || !lastKnown.isDamageableItem()) {
+            return false;
+        }
+
+        return MiningProgressTracker.remainingDurability(lastKnown) <= 1
+                || entry.lastObservedDamage() >= lastKnown.getMaxDamage() - 1;
     }
 
     private static void advance(RelayEntry previousEntry) {
@@ -340,11 +428,14 @@ public final class PickRelayController {
             return false;
         }
 
+        ToolTracker.reconcileQueue(CONFIGURED_QUEUE, player);
+
         while (++activeIndex < CONFIGURED_QUEUE.size()) {
             RelayEntry candidate = CONFIGURED_QUEUE.get(activeIndex);
-            if (!ToolTracker.matchesExpectedSlot(candidate, player)) {
-                stop(StopReason.TOOL_INVALID);
-                return false;
+            if (candidate.currentInventorySlot() < 0 || !ToolTracker.matchesExpectedSlot(candidate, player)) {
+                candidate.setStatus(RelayEntryStatus.SKIPPED);
+                RelayDebug.log("Skipping queued entry {} because its selected tool is no longer available", activeIndex + 1);
+                continue;
             }
 
             ItemStack currentStack = ToolTracker.liveStack(candidate, player);
@@ -369,6 +460,8 @@ public final class PickRelayController {
             }
 
             candidate.beginRuntime(equipped);
+            preserveTransitionRequested = false;
+            preserveNearBreakCooldownTicks = 0;
             transitionCooldownTicks = 1;
             RelayDebug.log("Entry {} is active from inventory slot {}", activeIndex + 1, candidate.currentInventorySlot());
             return true;
@@ -391,10 +484,19 @@ public final class PickRelayController {
             }
 
             int slot = tracked.currentInventorySlot();
-            if (slot < 0 || slot >= 36 || !occupiedTrackedSlots.add(slot)) {
+            if (slot < 0) {
+                // Missing pending tools are allowed and will be SKIPPED when their
+                // turn arrives. The active entry is handled earlier in tick().
+                continue;
+            }
+            if (slot >= 36 || !occupiedTrackedSlots.add(slot)) {
                 return StopReason.INVENTORY_DESYNC;
             }
             if (!ToolTracker.matchesExpectedSlot(tracked, player)) {
+                if (tracked.status() == RelayEntryStatus.PENDING) {
+                    tracked.setCurrentInventorySlot(-1);
+                    continue;
+                }
                 return StopReason.TOOL_INVALID;
             }
             if (tracked.status() == RelayEntryStatus.ACTIVE) {
@@ -416,6 +518,18 @@ public final class PickRelayController {
             waitingForWorkBlock = false;
             minecraft.gameMode.stopDestroyBlock();
             return;
+        }
+
+        RelayEntry active = activeEntry();
+        if (active != null && active.preserveAtOne()) {
+            ItemStack activeStack = ToolTracker.liveStack(active, player);
+            if (!activeStack.isEmpty()
+                    && activeStack.isDamageableItem()
+                    && MiningProgressTracker.remainingDurability(activeStack) <= 1) {
+                preserveTransitionRequested = true;
+                minecraft.gameMode.stopDestroyBlock();
+                return;
+            }
         }
 
         BlockHitResult blockHit = currentWorkBlock(minecraft);
@@ -500,13 +614,11 @@ public final class PickRelayController {
         return switch (reason) {
             case QUEUE_COMPLETE -> Component.translatable("message.pickrelay.queue_complete");
             case PLAYER_MOVED -> Component.translatable("message.pickrelay.stopped.player_moved");
-            case PHYSICAL_LEFT_CLICK, PHYSICAL_RIGHT_CLICK -> Component.translatable("message.pickrelay.stopped.manual_input");
             case PLAYER_DEATH -> Component.translatable("message.pickrelay.stopped.death");
             case DISCONNECT -> Component.translatable("message.pickrelay.stopped.disconnect");
             case DIMENSION_CHANGE -> Component.translatable("message.pickrelay.stopped.dimension");
             case TOOL_INVALID -> Component.translatable("message.pickrelay.stopped.tool_invalid");
             case INVENTORY_DESYNC -> Component.translatable("message.pickrelay.stopped.inventory");
-            case NO_VALID_NEXT_TOOL -> Component.translatable("message.pickrelay.stopped.no_tool");
             case INTERNAL_SAFETY -> Component.translatable("message.pickrelay.stopped.safety");
             case MANUAL -> Component.translatable("message.pickrelay.stopped.manual");
         };

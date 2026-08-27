@@ -47,11 +47,6 @@ public final class RelayQueue {
                 .findFirst();
     }
 
-    public Optional<RelayEntry> findAnyByCurrentInventorySlot(int inventorySlot) {
-        return entries.stream()
-                .filter(entry -> entry.currentInventorySlot() == inventorySlot)
-                .findFirst();
-    }
 
     public int indexOf(UUID id) {
         if (id == null) {
@@ -66,7 +61,7 @@ public final class RelayQueue {
     }
 
     public boolean containsInventorySlot(int inventorySlot) {
-        return entries.stream().anyMatch(entry -> entry.originalInventorySlot() == inventorySlot);
+        return entries.stream().anyMatch(entry -> entry.currentInventorySlot() == inventorySlot);
     }
 
     public boolean add(int inventorySlot, ItemStack stack) {
@@ -78,7 +73,7 @@ public final class RelayQueue {
     }
 
     public boolean removeByInventorySlot(int inventorySlot) {
-        return entries.removeIf(entry -> entry.originalInventorySlot() == inventorySlot);
+        return entries.removeIf(entry -> entry.currentInventorySlot() == inventorySlot);
     }
 
     public RelayEntry removeAt(int index) {

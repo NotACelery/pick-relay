@@ -4,6 +4,7 @@ import dev.maicra.pickrelay.client.RelayDebug;
 import dev.maicra.pickrelay.client.tool.ToolTracker;
 import dev.maicra.pickrelay.mixin.MultiPlayerGameModeInvoker;
 import dev.maicra.pickrelay.session.RelayEntry;
+import dev.maicra.pickrelay.session.RelayEntryStatus;
 import dev.maicra.pickrelay.session.RelayQueue;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -37,10 +38,13 @@ public final class InventoryRelayManager {
         }
 
         RelayEntry displacedEntry;
-        if (previousEntry != null && previousEntry.currentInventorySlot() == targetHotbar) {
+        if (previousEntry != null
+                && previousEntry != entry
+                && previousEntry.currentInventorySlot() == targetHotbar
+                && (previousEntry.status() == RelayEntryStatus.PENDING || previousEntry.status() == RelayEntryStatus.ACTIVE)) {
             displacedEntry = previousEntry;
         } else {
-            displacedEntry = queue.findAnyByCurrentInventorySlot(targetHotbar)
+            displacedEntry = queue.findByCurrentInventorySlot(targetHotbar)
                     .filter(candidate -> candidate != entry)
                     .orElse(null);
         }

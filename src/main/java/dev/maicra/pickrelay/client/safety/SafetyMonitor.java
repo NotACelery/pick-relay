@@ -1,6 +1,5 @@
 package dev.maicra.pickrelay.client.safety;
 
-import dev.maicra.pickrelay.client.gui.PickRelayScreen;
 import dev.maicra.pickrelay.session.StopReason;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -32,9 +31,6 @@ public final class SafetyMonitor {
         }
         if (anchorPosition == null || player.position().distanceToSqr(anchorPosition) > POSITION_TOLERANCE_SQ) {
             return StopReason.PLAYER_MOVED;
-        }
-        if (minecraft.screen != null && !(minecraft.screen instanceof PickRelayScreen)) {
-            return StopReason.INTERNAL_SAFETY;
         }
         return null;
     }

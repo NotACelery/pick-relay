@@ -24,7 +24,6 @@
   "screen.pickrelay.validation.no_player": "Jugador no disponible",
   "screen.pickrelay.validation.empty": "Agrega al menos una herramienta",
   "screen.pickrelay.validation.container_open": "Cierra otros contenedores antes de iniciar",
-  "screen.pickrelay.validation.slot_invalid": "Un slot de la cola es inválido",
   "screen.pickrelay.validation.tool_changed": "Una herramienta cambió o ya no está disponible",
   "screen.pickrelay.validation.preserve_requires_durability": "Preservar en 1 requiere una herramienta con durabilidad",
   "screen.pickrelay.validation.until_requires_durability": "Hasta romperse requiere una herramienta con durabilidad",
@@ -45,13 +44,11 @@
   "message.pickrelay.queue_complete": "Pick Relay: Cola agotada",
   "message.pickrelay.stopped.manual": "Pick Relay detenido",
   "message.pickrelay.stopped.player_moved": "Pick Relay detenido: El jugador se movió",
-  "message.pickrelay.stopped.manual_input": "Pick Relay detenido: Input manual del mouse",
   "message.pickrelay.stopped.death": "Pick Relay detenido: El jugador murió",
   "message.pickrelay.stopped.disconnect": "Pick Relay detenido: Desconexión",
   "message.pickrelay.stopped.dimension": "Pick Relay detenido: Cambio de dimensión",
   "message.pickrelay.stopped.tool_invalid": "Pick Relay detenido: Herramienta no disponible",
   "message.pickrelay.stopped.inventory": "Pick Relay detenido: El inventario cambió inesperadamente",
-  "message.pickrelay.stopped.no_tool": "Pick Relay detenido: No hay siguiente herramienta válida",
   "message.pickrelay.stopped.safety": "Pick Relay detenido: Se activó una condición de seguridad",
   "screen.pickrelay.start_short": "Iniciar",
   "screen.pickrelay.stop_short": "Detener",
@@ -77,6 +74,9 @@
   "tooltip.pickrelay.status.broken": "Rota",
   "tooltip.pickrelay.status.preserved": "Preservada",
   "tooltip.pickrelay.status.skipped": "Omitida",
-  "tooltip.pickrelay.status.invalid": "Inválida",
-  "tooltip.pickrelay.problem": "Problema: %s"
+  "tooltip.pickrelay.problem": "Problema: %s",
+  "screen.pickrelay.close": "Cerrar",
+  "screen.pickrelay.selected_tool": "HERRAMIENTA SELECCIONADA",
+  "screen.pickrelay.session_mode": "MODO DE MINADO",
+  "tooltip.pickrelay.missing_will_skip": "Herramienta seleccionada no disponible — esta entrada de la queue se omitirá"
 }

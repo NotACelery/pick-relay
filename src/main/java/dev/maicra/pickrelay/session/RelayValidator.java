@@ -2,6 +2,7 @@ package dev.maicra.pickrelay.session;
 
 import dev.maicra.pickrelay.client.tool.ToolEligibility;
 import dev.maicra.pickrelay.client.tool.ToolFingerprint;
+import dev.maicra.pickrelay.client.tool.ToolTracker;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
@@ -25,20 +26,27 @@ public final class RelayValidator {
             return new RelayValidationResult(false, Set.of(), Component.translatable("screen.pickrelay.validation.container_open"));
         }
 
+        ToolTracker.reconcileQueue(queue, player);
+
         Set<UUID> invalid = new LinkedHashSet<>();
         Component firstProblem = Component.empty();
+        int availableTools = 0;
 
         for (RelayEntry entry : queue.entries()) {
-            int slot = entry.originalInventorySlot();
+            int slot = entry.currentInventorySlot();
             if (slot < 0 || slot >= 36) {
-                invalid.add(entry.id());
-                if (firstProblem.getString().isEmpty()) {
-                    firstProblem = Component.translatable("screen.pickrelay.validation.slot_invalid");
-                }
+                // A missing queued tool is not a fatal validation error anymore.
+                // If it is still absent when its turn arrives, runtime marks it
+                // SKIPPED and continues with the next RelayEntry.
                 continue;
             }
 
             ItemStack live = player.getInventory().getItem(slot);
+            if (!ToolFingerprint.matchesConfigured(entry.snapshot(), live)) {
+                continue;
+            }
+            availableTools++;
+
             Component problem = validateEntry(entry, live);
             if (problem != null) {
                 invalid.add(entry.id());
@@ -48,6 +56,9 @@ public final class RelayValidator {
             }
         }
 
+        if (availableTools == 0) {
+            return new RelayValidationResult(false, Set.of(), Component.translatable("screen.pickrelay.validation.no_available_tools"));
+        }
         if (!invalid.isEmpty()) {
             return new RelayValidationResult(false, invalid, firstProblem);
         }

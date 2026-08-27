@@ -24,7 +24,6 @@
   "screen.pickrelay.validation.no_player": "Player unavailable",
   "screen.pickrelay.validation.empty": "Add at least one tool",
   "screen.pickrelay.validation.container_open": "Close other containers before starting",
-  "screen.pickrelay.validation.slot_invalid": "A queued inventory slot is invalid",
   "screen.pickrelay.validation.tool_changed": "A queued tool changed or is no longer available",
   "screen.pickrelay.validation.preserve_requires_durability": "Preserve at 1 requires a damageable tool",
   "screen.pickrelay.validation.until_requires_durability": "Until broken requires a damageable tool",
@@ -45,13 +44,11 @@
   "message.pickrelay.queue_complete": "Pick Relay: Queue exhausted",
   "message.pickrelay.stopped.manual": "Pick Relay stopped",
   "message.pickrelay.stopped.player_moved": "Pick Relay stopped: Player moved",
-  "message.pickrelay.stopped.manual_input": "Pick Relay stopped: Manual mouse input",
   "message.pickrelay.stopped.death": "Pick Relay stopped: Player died",
   "message.pickrelay.stopped.disconnect": "Pick Relay stopped: Disconnected",
   "message.pickrelay.stopped.dimension": "Pick Relay stopped: Dimension changed",
   "message.pickrelay.stopped.tool_invalid": "Pick Relay stopped: Tool unavailable",
   "message.pickrelay.stopped.inventory": "Pick Relay stopped: Inventory changed unexpectedly",
-  "message.pickrelay.stopped.no_tool": "Pick Relay stopped: No valid next tool",
   "message.pickrelay.stopped.safety": "Pick Relay stopped: Safety condition triggered",
   "screen.pickrelay.start_short": "Start",
   "screen.pickrelay.stop_short": "Stop",
@@ -77,6 +74,9 @@
   "tooltip.pickrelay.status.broken": "Broken",
   "tooltip.pickrelay.status.preserved": "Preserved",
   "tooltip.pickrelay.status.skipped": "Skipped",
-  "tooltip.pickrelay.status.invalid": "Invalid",
-  "tooltip.pickrelay.problem": "Problem: %s"
+  "tooltip.pickrelay.problem": "Problem: %s",
+  "screen.pickrelay.close": "Close",
+  "screen.pickrelay.selected_tool": "SELECTED TOOL",
+  "screen.pickrelay.session_mode": "SESSION MODE",
+  "tooltip.pickrelay.missing_will_skip": "Selected tool currently unavailable — this queue entry will be skipped"
 }

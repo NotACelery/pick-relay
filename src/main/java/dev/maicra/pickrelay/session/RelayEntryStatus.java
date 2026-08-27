@@ -6,6 +6,5 @@ public enum RelayEntryStatus {
     COMPLETED,
     BROKEN,
     PRESERVED,
-    SKIPPED,
-    INVALID
+    SKIPPED
 }

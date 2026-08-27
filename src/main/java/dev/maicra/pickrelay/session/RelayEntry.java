@@ -6,7 +6,6 @@ import java.util.UUID;
 
 public final class RelayEntry {
     private final UUID id;
-    private final int originalInventorySlot;
     private int currentInventorySlot;
     private final ItemStack snapshot;
     private ItemStack lastKnownSnapshot;
@@ -17,13 +16,11 @@ public final class RelayEntry {
 
     private int blocksBroken;
     private int durabilityConsumed;
-    private int initialRemainingDurability;
     private int lastObservedDamage;
 
-    public RelayEntry(int originalInventorySlot, ItemStack stack) {
+    public RelayEntry(int initialInventorySlot, ItemStack stack) {
         this.id = UUID.randomUUID();
-        this.originalInventorySlot = originalInventorySlot;
-        this.currentInventorySlot = originalInventorySlot;
+        this.currentInventorySlot = initialInventorySlot;
         this.snapshot = stack.copy();
         this.lastKnownSnapshot = stack.copy();
         this.workMode = RelayWorkMode.UNTIL_BROKEN;
@@ -34,10 +31,6 @@ public final class RelayEntry {
 
     public UUID id() {
         return id;
-    }
-
-    public int originalInventorySlot() {
-        return originalInventorySlot;
     }
 
     public int currentInventorySlot() {
@@ -106,10 +99,6 @@ public final class RelayEntry {
         return durabilityConsumed;
     }
 
-    public int initialRemainingDurability() {
-        return initialRemainingDurability;
-    }
-
     public void recordDurabilityConsumption(int amount, int observedDamage) {
         if (amount > 0) {
             durabilityConsumed += amount;
@@ -125,9 +114,6 @@ public final class RelayEntry {
         status = RelayEntryStatus.ACTIVE;
         blocksBroken = 0;
         durabilityConsumed = 0;
-        initialRemainingDurability = liveStack.isDamageableItem()
-                ? liveStack.getMaxDamage() - liveStack.getDamageValue()
-                : Integer.MAX_VALUE;
         lastObservedDamage = liveStack.isDamageableItem() ? liveStack.getDamageValue() : 0;
         rememberLiveStack(liveStack);
     }
@@ -149,11 +135,9 @@ public final class RelayEntry {
     }
 
     public void resetRuntime() {
-        currentInventorySlot = originalInventorySlot;
         status = RelayEntryStatus.PENDING;
         blocksBroken = 0;
         durabilityConsumed = 0;
-        initialRemainingDurability = 0;
         lastObservedDamage = snapshot.isDamageableItem() ? snapshot.getDamageValue() : 0;
         lastKnownSnapshot = snapshot.copy();
     }

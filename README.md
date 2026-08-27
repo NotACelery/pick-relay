@@ -2,131 +2,168 @@
 
 **Automate the grind. Schedule your tools.**
 
-Pick Relay is a client-side Minecraft 1.21.1 NeoForge mod for scheduling explicit, ordered tool queues for repetitive mining/work sessions.
+Pick Relay is a client-side Minecraft mod for planning and executing ordered tool-relay sessions. Instead of choosing the "best" tool automatically, Pick Relay uses the exact tools, order, limits and safety rules configured by the player.
 
-The functional source of truth is `docs/Pick-Relay-Especificacion-Pre-Desarrollo.md`.
+## Compatibility
 
-## Current development state
+- Minecraft **1.21.1**
+- NeoForge **21.1.235+**
+- Java **21** for development/building
+- Client-side only
 
-`0.1.0-alpha.7` hardens the end-to-end relay system after the two-mode mining design was completed. The focus is runtime inventory integrity, provenance-confirmed tool breakage, clearer waiting/validation feedback, and the remaining queue/detail UX defined before development.
+The server does not need Pick Relay installed.
 
-### Queue and configuration
+## What Pick Relay does
 
-- temporary 4x9 queue, maximum 36 concrete tools;
-- pickaxes, axes, shovels and hoes recognized through vanilla tool tags;
-- click and drag-paint ADD/REMOVE from the player inventory;
-- queue inspection, right-click removal, swap and insert reordering;
-- one-click **Clear Queue** while configuration is editable;
-- per-entry modes: Until Broken, Durability Budget and Blocks Broken;
-- integer durability slider constrained to currently usable durability;
-- numeric Blocks Broken target;
-- per-entry Preserve at 1 durability;
-- pre-start validation highlights invalid entries and refuses unsafe starts;
-- Start requires a valid block within normal interaction reach at activation;
-- queue becomes read-only while a session is active.
+Build a queue of up to **36 concrete tools** from your inventory and hotbar. Each queued tool keeps its own independent configuration:
 
-### Session mining modes
+- **Until Broken** — use the tool until it breaks.
+- **Durability Budget** — consume a specific amount of real durability.
+- **Blocks Broken** — stop after a specific number of successful block destructions.
+- **Preserve at 1** — never intentionally use the tool past one remaining durability.
 
-Before Start, Pick Relay exposes two mutually exclusive modes:
+Supported tool categories are detected through vanilla item tags:
 
-#### Single Block
+- Pickaxes
+- Axes
+- Shovels
+- Hoes
 
-- captures the exact non-air block coordinate under the crosshair when the session starts;
-- mines only while the current raycast resolves that same coordinate;
-- rotating the camera does not stop the relay, but aiming elsewhere pauses mining rather than attacking a different block;
-- temporary air at the captured generator coordinate is safe: Pick Relay stays ACTIVE and resumes when a block exists there and the player aims it again;
-- intended for compact cobblestone/stone generators and other farms where breaking the backing structure would be dangerous.
+Properly tagged modded tools are supported by the same mechanism.
 
-#### Line Mining
+## Mining modes
 
-- matches THE Pick's validated Auto Mining semantics;
-- every cycle raycasts again using normal `blockInteractionRange()`;
-- the current non-air block under the crosshair is mined with vanilla `continueDestroyBlock` behaviour;
-- rotating the camera immediately redirects mining to the newly aimed block;
-- temporary air, entities or no valid block under the crosshair do not cancel the session;
-- intended for advanced generators/lines where the player deliberately sweeps the camera across multiple blocks.
+### Single Block
 
-In **both** modes, the player's position/dimension is the safety anchor. Any real displacement stops the session. Camera rotation alone never does.
+Captures the block coordinate under the crosshair when the session starts. Pick Relay only mines that coordinate. Looking elsewhere pauses mining without cancelling the session.
 
-### Relay execution
+This mode is intended for compact generators where mining the backing block would damage the farm.
 
-- exact queue order takes priority over physical inventory order;
-- tools already in the hotbar are selected directly;
-- inventory tools use the first empty hotbar slot from left to right;
-- with a full hotbar, the active hotbar slot is reused as the relay slot;
-- initial full-hotbar fallback is hotbar slot 1 (inventory index 0);
-- inventory SWAP results are checked locally before Pick Relay accepts the move, including exact stack counts of displaced non-tool items;
-- queued tools displaced by a relay swap have their logical tracked slot updated;
-- every automatic hotbar selection explicitly invokes vanilla selected-slot synchronization before subsequent mining;
-- if the expected concrete tool cannot be safely resolved, the session stops;
-- every ACTIVE tick audits every pending/active tracked entry for slot uniqueness and fingerprint integrity, not only the currently equipped tool;
-- an empty active slot is treated as a normal broken tool only when Pick Relay observed that disappearance inside its own successful block destruction.
+### Line Mining
 
-### Mining progress
+Re-evaluates the block under the crosshair every cycle. Rotating the camera redirects mining immediately without stopping the session.
 
-- block budgets observe successful destruction from the vanilla client destruction path;
-- the destruction hook is scoped to synchronous Pick Relay `continueDestroyBlock` calls;
-- blocks broken by unrelated actions do not automatically count merely because a session is active;
-- block budgets count destroyed blocks, not clicks, drops or collected items;
-- durability budgets count observed ItemStack damage increases, so Unbreaking does not consume budget when it prevents durability loss;
-- later repairs do not subtract durability consumption already observed by Pick Relay;
-- Preserve at 1 takes priority over production targets;
-- tools already at 1 durability with Preserve enabled are skipped safely.
+This mode is intended for advanced generators and linear work areas.
 
-### Safety
+## Queue controls
 
-A running session stops and cleans up on:
+- Left click an eligible inventory tool to add/remove it.
+- Hold and drag across inventory slots to paint **ADD** or **REMOVE** selections.
+- Left click a queued tool to inspect and configure that specific entry.
+- Right click a queued tool to remove it.
+- Drag queued tools to reorder them with swap/insert behaviour.
+- Dropping a queued tool outside the queue removes only the queue entry, never the real ItemStack.
 
-- player movement from the captured player anchor position;
-- physical left-click or right-click in gameplay;
-- death/respawn;
-- disconnect/world exit;
-- dimension change;
-- tool identity mismatch;
-- inventory desync;
-- unsafe foreign screens/containers;
-- queue exhaustion;
-- manual Stop.
+The queue is temporary. Closing Pick Relay before starting a session clears it. During an active session the queue becomes read-only.
 
-Camera rotation is explicitly **not** a stop condition. `PickRelayScreen` can be opened while ACTIVE and does not pause the world; its clicks are UI input rather than emergency gameplay clicks.
+## Tool tracking and relay behaviour
 
-### HUD and live inspection
+Inventory slots are treated as locations, not identities. Each queue entry has its own local identity and ItemStack fingerprint.
 
-- compact HUD below the crosshair with Tool Z/X;
-- explicit waiting feedback when Single Block is waiting for its captured coordinate or Line Mining currently has no valid block under the crosshair;
-- Blocks and Durability modes show current progress/target;
-- Preserve at 1 is indicated while relevant;
-- the GUI shows active/completed/preserved entries and live progress;
-- the selected-tool panel now renders the actual tool icon, remaining/max durability and percentage;
-- invalid queued entries expose their concrete validation problem in the augmented tooltip;
-- completed/preserved entries retain their latest observed runtime ItemStack snapshot;
-- vanilla/modded item tooltips are retained and augmented with queue position, physical inventory location and explicit durability data.
+Pick Relay can therefore:
+
+- follow a queued tool when the player moves it to another inventory/hotbar slot;
+- respect queue order regardless of physical slot order;
+- select tools already in the hotbar directly;
+- move inventory tools into the first free hotbar slot;
+- reuse the active hotbar slot as the relay slot when the hotbar is full;
+- skip queued tools that are no longer present instead of terminating the whole session.
+
+Pick Relay does not inject hidden UUIDs or custom data into the player's ItemStacks.
+
+## Durability and block accounting
+
+- **Blocks Broken** counts successful block destruction initiated by Pick Relay, not clicks, swings, drops or collected items.
+- Hopper-fed farms work normally because drops do not need to enter the player inventory.
+- **Durability Budget** counts observed durability actually consumed.
+- Unbreaking only advances the durability budget when durability is really lost.
+- Later Mending repairs do not erase durability consumption already recorded.
+- **Preserve at 1** takes priority over production targets.
+
+## Safety
+
+The session is anchored to the player's position and dimension.
+
+Pick Relay stops automatically if:
+
+- the player is displaced, voluntarily or involuntarily;
+- the player dies;
+- the player disconnects/leaves the world;
+- the player changes dimension;
+- a relay/inventory state becomes unsafe to resolve;
+- the queue finishes.
+
+Camera rotation does **not** stop mining.
+
+Opening chat, the normal player inventory or the pause menu does not intentionally cancel the session. The Pick Relay GUI can also be reopened while mining is active.
+
+Manual stop is performed from the **Stop AFK Mining** button in the Pick Relay GUI.
+
+## HUD
+
+While active, Pick Relay displays a compact event-style status line above the hotbar showing:
+
+- current tool / total tools;
+- blocks or durability progress when relevant;
+- Until Broken state;
+- Preserve at 1 state;
+- waiting state when no valid work block is currently available.
+
+## Keybind
+
+Pick Relay provides a configurable **Open Pick Relay** keybind. Its default binding is **Mouse Button 5**.
+
+The same key opens the GUI while a session is active without stopping the relay.
+
+## What Pick Relay does not do
+
+Pick Relay deliberately does **not**:
+
+- choose the best tool automatically;
+- move or aim the player;
+- search for blocks;
+- pathfind;
+- increase mining speed or reach;
+- perform vein mining;
+- repair tools;
+- generate resources.
+
+Minecraft and the server continue to handle normal mining rules, enchantments, drops and durability.
+
+## Build
+
+The repository includes local build helpers that select Java 21 and download the pinned Gradle distribution when necessary.
+
+Windows:
+
+```bat
+build.bat
+```
+
+Linux/macOS:
+
+```bash
+./build.sh
+```
+
+The expected release artifact is:
+
+```text
+build/libs/pickrelay-1.21.1-1.0.0.jar
+```
+
+## Documentation
+
+- [`docs/Pick-Relay-Especificacion.md`](docs/Pick-Relay-Especificacion.md) — final 1.0.0 functional/technical specification.
+- [`docs/TESTING-1.0.0.md`](docs/TESTING-1.0.0.md) — final regression checklist.
+- [`docs/PUBLISHING-ROADMAP.md`](docs/PUBLISHING-ROADMAP.md) — release preparation for Modrinth and CurseForge.
 
 ## Debug logging
 
-Development logging is normally silent. Enable it with:
+Development logging is silent by default. Enable it with:
 
 ```text
 -Dpickrelay.debug=true
 ```
 
-This logs session transitions, relay swaps, destroyed blocks and safety-relevant relay decisions.
-
-## Build helper
-
-The included build helpers use Gradle `8.10.2`, with direct/fallback official distribution URLs and SHA-256 verification before extraction:
-
-- Windows: `build-alpha.bat`
-- Linux/macOS: `./build-alpha.sh`
-
-Java 21 is required.
-
-## Safety rule
-
-If Pick Relay cannot prove that it can continue with the exact tool selected by the player, it stops rather than improvising.
-
-## Current validation status
-
-The source/resources and the dangerous 1.21.1 API touchpoints have been statically reviewed, but this preparation runtime cannot resolve external Gradle/Maven hosts, so `0.1.0-alpha.7` still requires the first real Gradle build and `runClient` gameplay pass.
-
-Use `docs/TESTING-alpha.7.md` for that validation.
+This logs session transitions, inventory relay decisions, block progress and safety-related events.
