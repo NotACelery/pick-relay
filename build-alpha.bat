@@ -27,9 +27,6 @@ echo ============================================================
 echo Directory: %CD%
 echo.
 
-rem ------------------------------------------------------------
-rem 1. Find Java through PATH, JAVA_HOME, or Prism-managed runtimes.
-rem ------------------------------------------------------------
 where java.exe >nul 2>nul
 if not errorlevel 1 (
     for /f "delims=" %%J in ('where java.exe') do if not defined JAVA_EXE set "JAVA_EXE=%%J"
@@ -57,9 +54,6 @@ echo   %JAVA_EXE%
 if errorlevel 1 goto :java_broken
 
 echo.
-rem ------------------------------------------------------------
-rem 2. Download a known-compatible Gradle if needed.
-rem ------------------------------------------------------------
 if not exist "%DIST_DIR%\bin\gradle.bat" (
     if not exist "%DIST_ROOT%" mkdir "%DIST_ROOT%"
     if errorlevel 1 goto :mkdir_failed
@@ -87,9 +81,6 @@ if not exist "%DIST_DIR%\bin\gradle.bat" (
 
 if not exist "%DIST_DIR%\bin\gradle.bat" goto :gradle_missing
 
-rem ------------------------------------------------------------
-rem 3. Build.
-rem ------------------------------------------------------------
 echo.
 echo Building Pick Relay...
 echo The first build may download NeoForge dependencies.

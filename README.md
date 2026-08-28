@@ -56,6 +56,7 @@ This mode is intended for advanced generators and linear work areas.
 - Left click a queued tool to inspect and configure that specific entry.
 - Right click a queued tool to remove it.
 - Drag queued tools to reorder them with swap/insert behaviour.
+- The tool selected for inspection uses a distinct highlight, while drag insertion/swap targets use a separate cue.
 - Dropping a queued tool outside the queue removes only the queue entry, never the real ItemStack.
 
 The queue is temporary. Closing Pick Relay before starting a session clears it. During an active session the queue becomes read-only.
@@ -101,6 +102,8 @@ Camera rotation does **not** stop mining.
 
 Opening chat, the normal player inventory or the pause menu does not intentionally cancel the session. The Pick Relay GUI can also be reopened while mining is active.
 
+While the Pick Relay GUI is open, normal background gameplay input is intentionally suppressed: ongoing item use is released, manual attack/use is blocked, movement keys are released and manual block breaking is aborted. The only gameplay action Pick Relay intentionally keeps running behind its own screen is an already-active relay automining session.
+
 Manual stop is performed from the **Stop AFK Mining** button in the Pick Relay GUI.
 
 ## HUD
@@ -113,11 +116,28 @@ While active, Pick Relay displays a compact event-style status line above the ho
 - Preserve at 1 state;
 - waiting state when no valid work block is currently available.
 
+## Session panel
+
+The Pick Relay screen includes a live session panel so the GUI can stay open while mining. It shows:
+
+- elapsed session time;
+- total blocks broken by the current Pick Relay session;
+- theoretical BPS against the block currently under the crosshair;
+- current queue tool / total tools;
+- active status effects with mining-related effects prioritized;
+- positive mining-speed attribute modifiers, including compatible bonuses supplied by other mods.
+
+In compact-height layouts the panel sits between the relay queue and player inventory when enough horizontal space is available. In the normal layout it sits to the right of the queue.
+
+The **Selected Tool** section also estimates the selected queue tool against the block currently under the crosshair. It reports approximate **blocks per second (BPS)** and **seconds per block**, so switching the inspected queue entry immediately shows the expected difference between tools. The preview uses the tool's block mining speed and main-hand modifiers together with the player's current mining buffs/debuffs and relevant mining attributes.
+
+The BPS value is a theoretical block-breaking rate. Generator respawn timing, server/network delay, tick lag and mod logic outside Minecraft's normal destroy-progress calculation can make observed throughput lower.
+
 ## Keybind
 
 Pick Relay provides a configurable **Open Pick Relay** keybind. Its default binding is **Mouse Button 5**.
 
-The same key opens the GUI while a session is active without stopping the relay.
+The binding now toggles the Pick Relay screen: press it once to open and again to close. The normal Minecraft inventory key also closes the Pick Relay screen, matching the usual inventory-screen muscle memory. Closing the GUI does not stop an active relay session.
 
 ## What Pick Relay does not do
 
@@ -153,13 +173,16 @@ Linux/macOS:
 The expected release artifact is:
 
 ```text
-build/libs/pickrelay-1.21.1-1.0.1.jar
+build/libs/pickrelay-1.21.1-1.1.1.jar
 ```
 
 ## Documentation
 
-- [`docs/Pick-Relay-Especificacion.md`](docs/Pick-Relay-Especificacion.md) — final 1.0.0 functional/technical specification.
-- [`docs/TESTING-1.0.1.md`](docs/TESTING-1.0.1.md) — 1.0.1 hotfix regression checklist.
+- [`docs/Pick-Relay-Especificacion.md`](docs/Pick-Relay-Especificacion.md) — current 1.1.1 functional/technical specification.
+- [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) — architecture, invariants, responsive layout rules and source-maintenance guide.
+- [`docs/TESTING-1.1.1.md`](docs/TESTING-1.1.1.md) — 1.1.1 background-action hotfix regression checklist.
+- [`docs/TESTING-1.1.0.md`](docs/TESTING-1.1.0.md) — 1.1.0 session-panel and GUI-controls regression checklist.
+- [`docs/TESTING-1.0.1.md`](docs/TESTING-1.0.1.md) — 1.0.1 responsive-layout hotfix checklist.
 - [`docs/PUBLISHING-ROADMAP.md`](docs/PUBLISHING-ROADMAP.md) — release preparation for Modrinth and CurseForge.
 
 ## Debug logging

@@ -33,9 +33,6 @@ function Add-JavaHomeCandidate {
 function Get-JavaMajor {
     param([string]$JavaExe)
 
-    # Prefer the plain `java -version` banner. It is stable across Temurin,
-    # Oracle, Microsoft and launcher-managed runtimes and avoids depending on
-    # the formatting of -XshowSettings under Windows PowerShell 5.1.
     try {
         $banner = ((& $JavaExe -version 2>&1) | Out-String)
         if ($banner -match 'version\s+"(?:1\.)?(\d+)(?:[\.\-+_"]|$)') {
@@ -44,7 +41,6 @@ function Get-JavaMajor {
     } catch {
     }
 
-    # Fallback for unusual JVM banners.
     try {
         $properties = ((& $JavaExe -XshowSettings:properties -version 2>&1) | Out-String)
         if ($properties -match 'java\.specification\.version\s*=\s*(\d+)') {
@@ -56,10 +52,8 @@ function Get-JavaMajor {
     return $null
 }
 
-# Explicit project override wins when it points to a valid Java 21 home.
 Add-JavaHomeCandidate $env:PICK_RELAY_JAVA_HOME
 
-# Then inspect the user's normal Java configuration.
 Add-JavaHomeCandidate $env:JAVA_HOME
 
 try {
@@ -69,8 +63,6 @@ try {
 } catch {
 }
 
-# Minecraft launchers and common Windows JDK vendors. We deliberately search
-# these even when PATH already contains another Java version (for example JDK 25).
 $roots = @(
     (Join-Path $env:APPDATA 'PrismLauncher\java'),
     (Join-Path $env:LOCALAPPDATA 'PrismLauncher\java'),

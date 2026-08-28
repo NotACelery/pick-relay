@@ -31,16 +31,6 @@ echo Script: %~f0
 echo Directory: %CD%
 echo.
 
-rem ------------------------------------------------------------
-rem 1. Select Java 21.
-rem
-rem IMPORTANT: Gradle itself must START on Java 21. The Java
-rem toolchain configured in build.gradle is too late to fix a
-rem Gradle process that was already launched by Java 17/25.
-rem ------------------------------------------------------------
-
-rem Explicit per-project override. This is intentionally trusted when the
-rem expected java.exe exists; java -version is printed immediately below.
 if defined PICK_RELAY_JAVA_HOME (
     echo PICK_RELAY_JAVA_HOME is set to:
     echo   %PICK_RELAY_JAVA_HOME%
@@ -52,16 +42,12 @@ if defined PICK_RELAY_JAVA_HOME (
     echo.
 )
 
-rem Common Temurin / Eclipse Adoptium layout. Do not care which Java is first
-rem on PATH and do not care where the global JAVA_HOME points.
 if not defined JAVA_HOME_21 if defined ProgramFiles (
     for /d %%D in ("%ProgramFiles%\Eclipse Adoptium\jdk-21*") do (
         if not defined JAVA_HOME_21 if exist "%%~fD\bin\java.exe" set "JAVA_HOME_21=%%~fD"
     )
 )
 
-rem Fallback: inspect every java.exe on PATH and accept paths belonging to a
-rem jdk-21* directory. This covers the user's side-by-side JDK layout.
 if not defined JAVA_HOME_21 (
     for /f "delims=" %%J in ('where java.exe 2^>nul') do (
         set "CANDIDATE_JAVA=%%~fJ"
@@ -72,7 +58,6 @@ if not defined JAVA_HOME_21 (
     )
 )
 
-rem Generic fallback for Prism or vendors with non-standard directory names.
 if not defined JAVA_HOME_21 (
     set "JAVA_FINDER=%CD%\tools\find-java21.ps1"
     if exist "!JAVA_FINDER!" (
@@ -98,9 +83,6 @@ echo.
 "%JAVA_EXE%" -version
 if errorlevel 1 goto :java_broken
 
-rem ------------------------------------------------------------
-rem 2. Download a known-compatible Gradle if needed.
-rem ------------------------------------------------------------
 if not exist "%DIST_DIR%\bin\gradle.bat" (
     if not exist "%DIST_ROOT%" mkdir "%DIST_ROOT%"
     if errorlevel 1 goto :mkdir_failed
@@ -128,15 +110,11 @@ if not exist "%DIST_DIR%\bin\gradle.bat" (
 
 if not exist "%DIST_DIR%\bin\gradle.bat" goto :gradle_missing
 
-rem Re-print the actual Gradle launcher Java now that Gradle definitely exists.
 echo.
 echo Gradle runtime:
 call "%DIST_DIR%\bin\gradle.bat" --version | findstr /I /C:"Launcher JVM" /C:"Daemon JVM" /C:"JVM:"
 echo.
 
-rem ------------------------------------------------------------
-rem 3. Build.
-rem ------------------------------------------------------------
 echo Building Pick Relay...
 echo The first build may download NeoForge dependencies.
 echo.

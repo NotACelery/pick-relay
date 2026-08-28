@@ -43,10 +43,11 @@ public final class RelayQueue {
     public Optional<RelayEntry> findByCurrentInventorySlot(int inventorySlot) {
         return entries.stream()
                 .filter(entry -> entry.currentInventorySlot() == inventorySlot)
-                .filter(entry -> entry.status() == RelayEntryStatus.PENDING || entry.status() == RelayEntryStatus.ACTIVE)
+                .filter(entry ->
+                        entry.status() == RelayEntryStatus.PENDING
+                                || entry.status() == RelayEntryStatus.ACTIVE)
                 .findFirst();
     }
-
 
     public int indexOf(UUID id) {
         if (id == null) {

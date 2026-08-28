@@ -40,6 +40,8 @@ public final class PickRelayController {
     private static boolean waitingForWorkBlock;
     private static boolean preserveTransitionRequested;
     private static int preserveNearBreakCooldownTicks;
+    private static long sessionElapsedTicks;
+    private static int sessionBlocksBroken;
 
     private PickRelayController() {
     }
@@ -78,6 +80,14 @@ public final class PickRelayController {
         return waitingForWorkBlock;
     }
 
+    public static long sessionElapsedTicks() {
+        return sessionElapsedTicks;
+    }
+
+    public static int sessionBlocksBroken() {
+        return sessionBlocksBroken;
+    }
+
     public static RelayEntry activeEntry() {
         if (activeIndex < 0 || activeIndex >= CONFIGURED_QUEUE.size()) {
             return null;
@@ -85,13 +95,14 @@ public final class PickRelayController {
         return CONFIGURED_QUEUE.get(activeIndex);
     }
 
-    /** True while a block-destroy call belongs to the active Pick Relay mining cycle. */
     public static boolean isControlledAttackInvocation() {
         return controlledAttackInvocation;
     }
 
     public static void enterConfiguration() {
         if (state == RelayState.IDLE) {
+            sessionElapsedTicks = 0L;
+            sessionBlocksBroken = 0;
             state = RelayState.CONFIGURING;
         }
     }
@@ -145,6 +156,8 @@ public final class PickRelayController {
         waitingForWorkBlock = false;
         preserveTransitionRequested = false;
         preserveNearBreakCooldownTicks = 0;
+        sessionElapsedTicks = 0L;
+        sessionBlocksBroken = 0;
         sessionMiningMode = configuredMiningMode;
         singleBlockTarget = sessionMiningMode == RelayMiningMode.SINGLE_BLOCK
                 ? initialWorkBlock.getBlockPos().immutable()
@@ -201,6 +214,7 @@ public final class PickRelayController {
             return;
         }
 
+        sessionElapsedTicks++;
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
         if (player == null || minecraft.level == null || minecraft.gameMode == null) {
@@ -237,7 +251,9 @@ public final class PickRelayController {
             if (entry.status() == RelayEntryStatus.BROKEN || shouldTreatMissingActiveToolAsBroken(entry)) {
                 if (entry.status() != RelayEntryStatus.BROKEN) {
                     entry.setStatus(RelayEntryStatus.BROKEN);
-                    RelayDebug.log("Active entry {} missing from its slot after reaching critical durability; treating it as broken", activeIndex + 1);
+                    RelayDebug.log(
+                            "Active entry {} missing from its slot after reaching critical durability; treating it as broken",
+                            activeIndex + 1);
                 } else {
                     RelayDebug.log("Entry {} was confirmed broken by Pick Relay", activeIndex + 1);
                 }
@@ -259,7 +275,9 @@ public final class PickRelayController {
         ToolTracker.reconcileQueue(CONFIGURED_QUEUE, player);
         liveStack = ToolTracker.liveStack(entry, player);
 
-        if (entry.currentInventorySlot() < 0 || liveStack.isEmpty() || !ToolTracker.matchesExpectedSlot(entry, player)) {
+        if (entry.currentInventorySlot() < 0
+                || liveStack.isEmpty()
+                || !ToolTracker.matchesExpectedSlot(entry, player)) {
             entry.setStatus(RelayEntryStatus.SKIPPED);
             RelayDebug.log("Active entry {} no longer has a resolvable tool identity; skipping it", activeIndex + 1);
             advance(entry);
@@ -291,7 +309,6 @@ public final class PickRelayController {
         preserveTransitionRequested = false;
         holdControlledAttack();
 
-        // Mining can consume the last safe durability, so re-check in the same tick.
         if (!isActive() || activeEntry() != entry || entry.status() != RelayEntryStatus.ACTIVE) {
             return;
         }
@@ -309,7 +326,7 @@ public final class PickRelayController {
             if (entry.preserveAtOne()
                     && afterAttack.isDamageableItem()
                     && MiningProgressTracker.remainingDurability(afterAttack) <= 3) {
-                // Allow the authoritative damage update to settle near the break threshold.
+
                 preserveNearBreakCooldownTicks = Math.max(preserveNearBreakCooldownTicks, 2);
             }
         }
@@ -336,6 +353,7 @@ public final class PickRelayController {
         }
 
         PROGRESS.onBlockDestroyed(entry);
+        sessionBlocksBroken++;
 
         if (damageBefore >= 0) {
             ItemStack after = ToolTracker.liveStack(entry, minecraft.player);
@@ -363,7 +381,6 @@ public final class PickRelayController {
                 activeIndex + 1, pos, entry.blocksBroken(), entry.durabilityConsumed());
     }
 
-
     private static boolean finishEntryIfComplete(RelayEntry entry, ItemStack liveStack) {
         MiningProgressTracker.Completion completion = PROGRESS.completion(entry, liveStack);
         if (completion == MiningProgressTracker.Completion.PRESERVED) {
@@ -373,7 +390,12 @@ public final class PickRelayController {
         if (completion == MiningProgressTracker.Completion.TARGET_REACHED) {
             entry.rememberLiveStack(liveStack);
             entry.setStatus(RelayEntryStatus.COMPLETED);
-            RelayDebug.log("Entry {} reached its {} target ({}/{})", activeIndex + 1, entry.workMode(), entry.progress(), entry.workTarget());
+            RelayDebug.log(
+                    "Entry {} reached its {} target ({}/{})",
+                    activeIndex + 1,
+                    entry.workMode(),
+                    entry.progress(),
+                    entry.workTarget());
             advance(entry);
             return true;
         }
@@ -386,7 +408,10 @@ public final class PickRelayController {
         entry.setStatus(RelayEntryStatus.PRESERVED);
         preserveTransitionRequested = false;
         preserveNearBreakCooldownTicks = 0;
-        RelayDebug.log("Entry {} preserved at {} remaining durability", activeIndex + 1, MiningProgressTracker.remainingDurability(liveStack));
+        RelayDebug.log(
+                "Entry {} preserved at {} remaining durability",
+                activeIndex + 1,
+                MiningProgressTracker.remainingDurability(liveStack));
         advance(entry);
     }
 
@@ -422,7 +447,9 @@ public final class PickRelayController {
             RelayEntry candidate = CONFIGURED_QUEUE.get(activeIndex);
             if (candidate.currentInventorySlot() < 0 || !ToolTracker.matchesExpectedSlot(candidate, player)) {
                 candidate.setStatus(RelayEntryStatus.SKIPPED);
-                RelayDebug.log("Skipping queued entry {} because its selected tool is no longer available", activeIndex + 1);
+                RelayDebug.log(
+                        "Skipping queued entry {} because its selected tool is no longer available",
+                        activeIndex + 1);
                 continue;
             }
 
@@ -451,7 +478,10 @@ public final class PickRelayController {
             preserveTransitionRequested = false;
             preserveNearBreakCooldownTicks = 0;
             transitionCooldownTicks = 1;
-            RelayDebug.log("Entry {} is active from inventory slot {}", activeIndex + 1, candidate.currentInventorySlot());
+            RelayDebug.log(
+                    "Entry {} is active from inventory slot {}",
+                    activeIndex + 1,
+                    candidate.currentInventorySlot());
             return true;
         }
 
@@ -521,7 +551,7 @@ public final class PickRelayController {
         BlockHitResult blockHit = currentWorkBlock(minecraft);
         if (blockHit == null) {
             waitingForWorkBlock = true;
-            // No valid work block pauses mining without ending the session.
+
             minecraft.gameMode.stopDestroyBlock();
             return;
         }
@@ -556,7 +586,6 @@ public final class PickRelayController {
         }
     }
 
-    /** Resolves the current work block according to the active session mode. */
     private static BlockHitResult currentWorkBlock(Minecraft minecraft) {
         BlockHitResult blockHit = raycastCurrentBlock(minecraft);
         if (blockHit == null) {

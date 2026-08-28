@@ -128,7 +128,7 @@ public final class RelayEntry {
         if (currentDamage > lastObservedDamage) {
             durabilityConsumed += currentDamage - lastObservedDamage;
         }
-        // Repairs move the baseline without erasing durability already consumed.
+
         lastObservedDamage = currentDamage;
         rememberLiveStack(liveStack);
     }

@@ -1,5 +1,43 @@
 # Changelog
 
+## 1.1.1
+
+Hotfix for background player actions while the Pick Relay screen is open.
+
+### Fixed
+
+- Opening Pick Relay now immediately releases an ongoing item-use action, such as eating, drinking, shielding or charging a usable item.
+- Manual attack/use and movement key states are suppressed while the Pick Relay screen remains open.
+- Manual block breaking is aborted when Pick Relay is opened outside an active relay session.
+- Active Pick Relay automining remains allowed in the background and continues normally with the GUI open.
+
+## 1.1.0
+
+### Session visibility
+
+- Added a live session panel with elapsed time, total blocks broken and the currently active queue tool.
+- Added live theoretical blocks-per-second (BPS) for the block currently under the crosshair while a session is running.
+- Active status effects are visible directly from the Pick Relay screen, with mining-related effects prioritized.
+- Positive mining-speed attribute bonuses from compatible mods are surfaced without adding hard dependencies.
+- The session panel sits between the queue and inventory in the responsive layout and to the right of the queue in the normal layout.
+
+### Controls
+
+- Pressing the Pick Relay keybind again now closes the Pick Relay screen.
+- The normal Minecraft inventory key also closes Pick Relay, matching vanilla inventory-screen muscle memory.
+- Closing the GUI during an active relay session keeps the mining session running.
+
+### Mining rate estimator
+
+- Selecting a queued tool now estimates how quickly that exact tool would break the block currently under the crosshair.
+- The estimate accounts for the tool's block mining speed/material, correct-tool rules, enchantment and main-hand attribute modifiers, Haste/Conduit Power, Mining Fatigue, mining-speed attributes, underwater penalties and airborne penalties.
+- Selected-tool details show both estimated BPS and seconds per block, making it easier to compare queued tools without starting the session.
+
+### Queue UX
+
+- The queue entry selected for inspection now uses a distinct gold highlight.
+- Drag insertion and swap targets now use a separate cyan highlight so they are not confused with the active or selected tool.
+
 ## 1.0.1
 
 Hotfix for the Pick Relay configuration screen.

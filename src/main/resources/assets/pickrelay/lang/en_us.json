@@ -78,5 +78,18 @@
   "screen.pickrelay.close": "Close",
   "screen.pickrelay.selected_tool": "SELECTED TOOL",
   "screen.pickrelay.session_mode": "SESSION MODE",
-  "tooltip.pickrelay.missing_will_skip": "Selected tool currently unavailable — this queue entry will be skipped"
+  "tooltip.pickrelay.missing_will_skip": "Selected tool currently unavailable — this queue entry will be skipped",
+  "screen.pickrelay.session_panel": "SESSION",
+  "screen.pickrelay.session.time": "Time: %s",
+  "screen.pickrelay.session.blocks": "Blocks: %s",
+  "screen.pickrelay.session.tool": "Tool: %s",
+  "screen.pickrelay.session.no_effects": "No active effects",
+  "screen.pickrelay.session.more": "+%s more",
+  "screen.pickrelay.estimate.aim": "Aim at a block to estimate mining rate",
+  "screen.pickrelay.estimate.unbreakable": "%s · Unbreakable",
+  "screen.pickrelay.estimate.unavailable": "%s · Mining rate unavailable",
+  "screen.pickrelay.estimate.rate": "%s · ~%s BPS · %ss/block",
+  "screen.pickrelay.session.bps": "%s: %s BPS",
+  "screen.pickrelay.session.bps_unbreakable": "%s: unbreakable",
+  "screen.pickrelay.session.bps_none": "BPS: —"
 }

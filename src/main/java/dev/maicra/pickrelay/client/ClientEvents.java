@@ -14,6 +14,8 @@ import net.neoforged.neoforge.client.event.RenderGuiEvent;
 
 @EventBusSubscriber(modid = PickRelay.MOD_ID, value = Dist.CLIENT)
 public final class ClientEvents {
+    private static int relayToggleCooldownTicks;
+
     private ClientEvents() {
     }
 
@@ -21,13 +23,28 @@ public final class ClientEvents {
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
 
-        while (RelayKeyMappings.OPEN_RELAY.consumeClick()) {
-            if (minecraft.player != null) {
+        if (relayToggleCooldownTicks > 0) {
+            relayToggleCooldownTicks--;
+            while (RelayKeyMappings.OPEN_RELAY.consumeClick()) {
+
+            }
+        } else if (RelayKeyMappings.OPEN_RELAY.consumeClick()) {
+            while (RelayKeyMappings.OPEN_RELAY.consumeClick()) {
+
+            }
+
+            if (minecraft.screen instanceof PickRelayScreen screen) {
+                screen.onClose();
+            } else if (minecraft.player != null) {
                 minecraft.setScreen(new PickRelayScreen());
             }
         }
 
         PickRelayController.tick();
+    }
+
+    public static void suppressRelayToggleAfterScreenClose() {
+        relayToggleCooldownTicks = 2;
     }
 
     @SubscribeEvent

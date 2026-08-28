@@ -17,13 +17,22 @@ public final class RelayValidator {
 
     public static RelayValidationResult validate(RelayQueue queue, LocalPlayer player) {
         if (player == null) {
-            return new RelayValidationResult(false, Set.of(), Component.translatable("screen.pickrelay.validation.no_player"));
+            return new RelayValidationResult(
+                    false,
+                    Set.of(),
+                    Component.translatable("screen.pickrelay.validation.no_player"));
         }
         if (queue.isEmpty()) {
-            return new RelayValidationResult(false, Set.of(), Component.translatable("screen.pickrelay.validation.empty"));
+            return new RelayValidationResult(
+                    false,
+                    Set.of(),
+                    Component.translatable("screen.pickrelay.validation.empty"));
         }
         if (player.containerMenu != player.inventoryMenu) {
-            return new RelayValidationResult(false, Set.of(), Component.translatable("screen.pickrelay.validation.container_open"));
+            return new RelayValidationResult(
+                    false,
+                    Set.of(),
+                    Component.translatable("screen.pickrelay.validation.container_open"));
         }
 
         ToolTracker.reconcileQueue(queue, player);
@@ -54,7 +63,10 @@ public final class RelayValidator {
         }
 
         if (availableTools == 0) {
-            return new RelayValidationResult(false, Set.of(), Component.translatable("screen.pickrelay.validation.no_available_tools"));
+            return new RelayValidationResult(
+                    false,
+                    Set.of(),
+                    Component.translatable("screen.pickrelay.validation.no_available_tools"));
         }
         if (!invalid.isEmpty()) {
             return new RelayValidationResult(false, invalid, firstProblem);

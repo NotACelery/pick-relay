@@ -1,6 +1,10 @@
 package dev.maicra.pickrelay.client.gui;
 
+import com.mojang.blaze3d.platform.InputConstants;
+import dev.maicra.pickrelay.client.ClientEvents;
 import dev.maicra.pickrelay.client.PickRelayController;
+import dev.maicra.pickrelay.client.RelayKeyMappings;
+import dev.maicra.pickrelay.client.progress.MiningRateEstimator;
 import dev.maicra.pickrelay.client.tool.ToolEligibility;
 import dev.maicra.pickrelay.client.tool.ToolTracker;
 import dev.maicra.pickrelay.session.RelayEntry;
@@ -19,11 +23,17 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.client.gui.widget.ExtendedSlider;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -38,8 +48,21 @@ public final class PickRelayScreen extends Screen {
     private static final int GRID_WIDTH = COLUMNS * SLOT_SIZE;
     private static final int QUEUE_HEIGHT = QUEUE_ROWS * SLOT_SIZE;
     private static final int SIDE_BY_SIDE_GRID_GAP = 24;
+    private static final int SESSION_PANEL_WIDTH = 108;
+    private static final int SESSION_PANEL_HEIGHT = QUEUE_HEIGHT + 10;
+    private static final int SESSION_PANEL_GAP = 6;
+    private static final int SESSION_PANEL_PADDING = 5;
+    private static final int SESSION_ROW_HEIGHT = 10;
     private static final int LAYOUT_BOTTOM_MARGIN = 30;
     private static final int SIDE_BY_SIDE_MIN_WIDTH = GRID_WIDTH * 2 + SIDE_BY_SIDE_GRID_GAP + 12;
+    private static final int RESPONSIVE_SESSION_MIN_WIDTH =
+            GRID_WIDTH * 2 + SESSION_PANEL_WIDTH + SESSION_PANEL_GAP * 2 + 4;
+    private static final int NORMAL_SESSION_MIN_WIDTH = GRID_WIDTH + SESSION_PANEL_WIDTH + SESSION_PANEL_GAP + 8;
+    private static final int COLOR_ACTIVE = 0xFFFFFFFF;
+    private static final int COLOR_SELECTED = 0xFFFFD75F;
+    private static final int COLOR_INVALID = 0xFFFF5555;
+    private static final int COLOR_DRAG_TARGET = 0xFF55FFFF;
+    private static final int COLOR_HOVER = 0xFFB0B0B0;
     private static final double QUEUE_DRAG_THRESHOLD_SQ = 16.0;
 
     private final RelayQueue queue = PickRelayController.queue();
@@ -69,6 +92,7 @@ public final class PickRelayScreen extends Screen {
 
     @Override
     protected void init() {
+        suppressBackgroundGameplay();
         PickRelayController.enterConfiguration();
 
         int controlsY = detailsControlsY();
@@ -99,25 +123,29 @@ public final class PickRelayScreen extends Screen {
                 .bounds(detailsPreserveX(), controlsY, 132, 20)
                 .build());
 
-        singleBlockButton = addRenderableWidget(Button.builder(Component.empty(), button -> setMiningMode(RelayMiningMode.SINGLE_BLOCK))
-                .bounds(singleBlockButtonX(), miningModeButtonsY(), miningModeButtonWidth(), 20)
-                .build());
+        singleBlockButton = addRenderableWidget(
+                Button.builder(Component.empty(), button -> setMiningMode(RelayMiningMode.SINGLE_BLOCK))
+                        .bounds(singleBlockButtonX(), miningModeButtonsY(), miningModeButtonWidth(), 20)
+                        .build());
 
-        lineMiningButton = addRenderableWidget(Button.builder(Component.empty(), button -> setMiningMode(RelayMiningMode.LINE_MINING))
-                .bounds(lineMiningButtonX(), miningModeButtonsY(), miningModeButtonWidth(), 20)
-                .build());
+        lineMiningButton = addRenderableWidget(
+                Button.builder(Component.empty(), button -> setMiningMode(RelayMiningMode.LINE_MINING))
+                        .bounds(lineMiningButtonX(), miningModeButtonsY(), miningModeButtonWidth(), 20)
+                        .build());
 
         actionButton = addRenderableWidget(Button.builder(actionLabel(), button -> onAction())
                 .bounds(actionButtonX(), actionButtonY(), actionButtonWidth(), 20)
                 .build());
 
-        clearQueueButton = addRenderableWidget(Button.builder(Component.translatable("screen.pickrelay.clear_queue"), button -> clearQueue())
-                .bounds(clearQueueButtonX(), clearQueueButtonY(), clearQueueButtonWidth(), 20)
-                .build());
+        clearQueueButton = addRenderableWidget(
+                Button.builder(Component.translatable("screen.pickrelay.clear_queue"), button -> clearQueue())
+                        .bounds(clearQueueButtonX(), clearQueueButtonY(), clearQueueButtonWidth(), 20)
+                        .build());
 
-        closeButton = addRenderableWidget(Button.builder(Component.translatable("screen.pickrelay.close"), button -> onClose())
-                .bounds(closeButtonX(), closeButtonY(), closeButtonWidth(), 20)
-                .build());
+        closeButton = addRenderableWidget(
+                Button.builder(Component.translatable("screen.pickrelay.close"), button -> onClose())
+                        .bounds(closeButtonX(), closeButtonY(), closeButtonWidth(), 20)
+                        .build());
 
         if (selectedEntryId == null && !queue.isEmpty()) {
             selectedEntryId = queue.get(0).id();
@@ -129,6 +157,7 @@ public final class PickRelayScreen extends Screen {
     @Override
     public void tick() {
         super.tick();
+        suppressBackgroundGameplay();
         if (selectedEntryId != null && queue.findById(selectedEntryId).isEmpty()) {
             selectedEntryId = null;
             syncEditorFromSelection();
@@ -145,6 +174,7 @@ public final class PickRelayScreen extends Screen {
         renderQueueHeader(gui);
 
         renderQueue(gui, mouseX, mouseY);
+        renderSessionPanel(gui);
         renderSelectedDetails(gui);
         renderPlayerInventory(gui, mouseX, mouseY);
         renderSessionModeHeader(gui);
@@ -153,8 +183,52 @@ public final class PickRelayScreen extends Screen {
         renderHoveredTooltip(gui, mouseX, mouseY);
     }
 
+    private void suppressBackgroundGameplay() {
+        Minecraft client = minecraft != null ? minecraft : Minecraft.getInstance();
+
+        client.options.keyUse.setDown(false);
+        client.options.keyAttack.setDown(false);
+        client.options.keyUp.setDown(false);
+        client.options.keyDown.setDown(false);
+        client.options.keyLeft.setDown(false);
+        client.options.keyRight.setDown(false);
+        client.options.keyJump.setDown(false);
+        client.options.keyShift.setDown(false);
+        client.options.keySprint.setDown(false);
+
+        if (client.player != null && client.player.isUsingItem()) {
+            if (client.gameMode != null) {
+                client.gameMode.releaseUsingItem(client.player);
+            } else {
+                client.player.releaseUsingItem();
+            }
+        }
+
+        if (!PickRelayController.isActive() && client.gameMode != null) {
+            client.gameMode.stopDestroyBlock();
+        }
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (RelayKeyMappings.OPEN_RELAY.isActiveAndMatches(InputConstants.getKey(keyCode, scanCode))) {
+            closeFromRelayBinding();
+            return true;
+        }
+        if (minecraft != null && minecraft.options.keyInventory.matches(keyCode, scanCode)) {
+            onClose();
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (RelayKeyMappings.OPEN_RELAY.isActiveAndMatches(InputConstants.Type.MOUSE.getOrCreate(button))) {
+            closeFromRelayBinding();
+            return true;
+        }
+
         if (PickRelayController.canEditQueue()) {
             int inventorySlot = inventorySlotAt(mouseX, mouseY);
             if (button == 0 && inventorySlot >= 0 && beginInventoryDrag(inventorySlot)) {
@@ -166,7 +240,9 @@ public final class PickRelayScreen extends Screen {
                 if (button == 1) {
                     RelayEntry removed = queue.removeAt(queueCell);
                     if (removed != null && removed.id().equals(selectedEntryId)) {
-                        selectedEntryId = queue.isEmpty() ? null : queue.get(Math.min(queueCell, queue.size() - 1)).id();
+                        selectedEntryId = queue.isEmpty()
+                                ? null
+                                : queue.get(Math.min(queueCell, queue.size() - 1)).id();
                     }
                     resetQueueDrag();
                     syncEditorFromSelection();
@@ -394,8 +470,15 @@ public final class PickRelayScreen extends Screen {
     }
 
     private void updateWidgets() {
-        if (actionButton == null || clearQueueButton == null || closeButton == null || singleBlockButton == null || lineMiningButton == null
-                || modeButton == null || preserveButton == null || targetEdit == null || durabilitySlider == null) {
+        if (actionButton == null
+                || clearQueueButton == null
+                || closeButton == null
+                || singleBlockButton == null
+                || lineMiningButton == null
+                || modeButton == null
+                || preserveButton == null
+                || targetEdit == null
+                || durabilitySlider == null) {
             return;
         }
 
@@ -448,6 +531,11 @@ public final class PickRelayScreen extends Screen {
         return selected ? Component.literal("> ").append(label).append(" <") : label;
     }
 
+    private void closeFromRelayBinding() {
+        ClientEvents.suppressRelayToggleAfterScreenClose();
+        onClose();
+    }
+
     private void clearQueue() {
         if (!PickRelayController.canEditQueue()) {
             return;
@@ -490,7 +578,9 @@ public final class PickRelayScreen extends Screen {
             boolean selected = entry.id().equals(selectedEntryId);
             boolean hovered = contains(mouseX, mouseY, x, y, SLOT_SIZE, SLOT_SIZE);
 
-            if (entry.status() == RelayEntryStatus.COMPLETED || entry.status() == RelayEntryStatus.BROKEN || entry.status() == RelayEntryStatus.PRESERVED) {
+            if (entry.status() == RelayEntryStatus.COMPLETED
+                    || entry.status() == RelayEntryStatus.BROKEN
+                    || entry.status() == RelayEntryStatus.PRESERVED) {
                 gui.fill(x + 1, y + 1, x + 17, y + 17, 0x66000000);
             }
 
@@ -498,15 +588,19 @@ public final class PickRelayScreen extends Screen {
             gui.renderItem(stack, x + 1, y + 1);
             gui.renderItemDecorations(font, stack, x + 1, y + 1);
 
-            if (entry.status() == RelayEntryStatus.ACTIVE) {
-                drawOutline(gui, x, y, 0xFFFFFFFF);
-                gui.drawString(font, ">", x + 11, y + 1, 0xFFFFFFFF, true);
-            } else if (invalid.contains(entry.id())) {
-                drawOutline(gui, x, y, 0xFFFF5555);
-            } else if (selected) {
-                drawOutline(gui, x, y, 0xFFAAAAFF);
+            if (invalid.contains(entry.id())) {
+                drawOutline(gui, x, y, COLOR_INVALID);
+            } else if (entry.status() == RelayEntryStatus.ACTIVE) {
+                drawOutline(gui, x, y, COLOR_ACTIVE);
             } else if (hovered && !queueDragging) {
-                drawOutline(gui, x, y, 0xFFB0B0B0);
+                drawOutline(gui, x, y, COLOR_HOVER);
+            }
+
+            if (selected) {
+                drawInnerOutline(gui, x, y, COLOR_SELECTED);
+            }
+            if (entry.status() == RelayEntryStatus.ACTIVE) {
+                gui.drawString(font, ">", x + 11, y + 1, COLOR_ACTIVE, true);
             }
 
             gui.drawString(font, String.format("%02d", cell + 1), x + 1, y + 1, 0xFFE0E0E0, true);
@@ -515,9 +609,19 @@ public final class PickRelayScreen extends Screen {
 
     private void renderSelectedDetails(GuiGraphics gui) {
         RelayEntry entry = selectedEntry().orElse(null);
-        gui.drawCenteredString(font, Component.translatable("screen.pickrelay.selected_tool"), width / 2, detailsHeaderY(), 0xC0C0C0);
+        gui.drawCenteredString(
+                font,
+                Component.translatable("screen.pickrelay.selected_tool"),
+                width / 2,
+                detailsHeaderY(),
+                0xC0C0C0);
         if (entry == null) {
-            gui.drawCenteredString(font, Component.translatable("screen.pickrelay.details.none"), width / 2, detailsSummaryY(), 0xD0D0D0);
+            gui.drawCenteredString(
+                    font,
+                    Component.translatable("screen.pickrelay.details.none"),
+                    width / 2,
+                    detailsSummaryY(),
+                    0xD0D0D0);
             return;
         }
 
@@ -537,7 +641,12 @@ public final class PickRelayScreen extends Screen {
 
         gui.drawCenteredString(
                 font,
-                Component.translatable("screen.pickrelay.details.summary", position, queue.size(), display.getHoverName(), durability),
+                Component.translatable(
+                        "screen.pickrelay.details.summary",
+                        position,
+                        queue.size(),
+                        display.getHoverName(),
+                        durability),
                 width / 2,
                 detailsSummaryY(),
                 0xD0D0D0
@@ -545,14 +654,45 @@ public final class PickRelayScreen extends Screen {
 
         Component progress = progressText(entry);
         gui.drawCenteredString(font, progress, width / 2, detailsProgressY(), 0xA8A8A8);
+
+        Component rate = selectedMiningRateText(display);
+        gui.drawCenteredString(font, rate, width / 2, detailsRateY(), 0xFF80E0FF);
+    }
+
+    private Component selectedMiningRateText(ItemStack tool) {
+        MiningRateEstimator.Estimate estimate = MiningRateEstimator.preview(tool);
+        if (estimate.target() == null) {
+            return Component.translatable("screen.pickrelay.estimate.aim");
+        }
+
+        Component blockName = estimate.target().state().getBlock().getName();
+        if (estimate.unbreakable()) {
+            return Component.translatable("screen.pickrelay.estimate.unbreakable", blockName);
+        }
+        if (!estimate.available()) {
+            return Component.translatable("screen.pickrelay.estimate.unavailable", blockName);
+        }
+
+        return Component.translatable(
+                "screen.pickrelay.estimate.rate",
+                blockName,
+                formatRate(estimate.blocksPerSecond()),
+                formatSecondsPerBlock(estimate.secondsPerBlock())
+        );
     }
 
     private Component progressText(RelayEntry entry) {
         if (entry.status() == RelayEntryStatus.ACTIVE) {
             Component base = switch (entry.workMode()) {
                 case UNTIL_BROKEN -> Component.translatable("screen.pickrelay.progress.until_broken");
-                case DURABILITY -> Component.translatable("screen.pickrelay.progress.durability", entry.durabilityConsumed(), entry.workTarget());
-                case BLOCKS -> Component.translatable("screen.pickrelay.progress.blocks", entry.blocksBroken(), entry.workTarget());
+                case DURABILITY -> Component.translatable(
+                        "screen.pickrelay.progress.durability",
+                        entry.durabilityConsumed(),
+                        entry.workTarget());
+                case BLOCKS -> Component.translatable(
+                        "screen.pickrelay.progress.blocks",
+                        entry.blocksBroken(),
+                        entry.workTarget());
             };
             if (PickRelayController.isWaitingForWorkBlock()) {
                 String key = PickRelayController.miningMode() == RelayMiningMode.SINGLE_BLOCK
@@ -586,7 +726,12 @@ public final class PickRelayScreen extends Screen {
         int startX = inventoryGridStartX();
         int startY = inventoryStartY();
 
-        gui.drawCenteredString(font, Component.translatable("screen.pickrelay.inventory"), inventoryHeaderCenterX(), inventoryLabelY(), 0xC0C0C0);
+        gui.drawCenteredString(
+                font,
+                Component.translatable("screen.pickrelay.inventory"),
+                inventoryHeaderCenterX(),
+                inventoryLabelY(),
+                0xC0C0C0);
 
         if (minecraft.player == null) {
             return;
@@ -621,6 +766,281 @@ public final class PickRelayScreen extends Screen {
         }
     }
 
+    private void renderSessionPanel(GuiGraphics gui) {
+        if (!sessionPanelVisible()) {
+            return;
+        }
+
+        int x = sessionPanelX();
+        int y = queueStartY();
+        drawPanelBackground(gui, x, y, SESSION_PANEL_WIDTH, SESSION_PANEL_HEIGHT);
+        gui.drawCenteredString(
+                font,
+                Component.translatable("screen.pickrelay.session_panel"),
+                x + SESSION_PANEL_WIDTH / 2,
+                21,
+                0xC0C0C0
+        );
+
+        List<SessionLine> lines = sessionPanelLines();
+        int maxTextWidth = SESSION_PANEL_WIDTH - SESSION_PANEL_PADDING * 2;
+        int lineY = y + 3;
+        for (SessionLine line : lines) {
+            String text = fitPanelText(line.text().getString(), maxTextWidth);
+            gui.drawString(font, text, x + SESSION_PANEL_PADDING, lineY, line.color(), false);
+            lineY += SESSION_ROW_HEIGHT;
+        }
+    }
+
+    private List<SessionLine> sessionPanelLines() {
+        List<SessionLine> lines = new ArrayList<>();
+        String toolPosition = PickRelayController.isActive() && PickRelayController.activeIndex() >= 0
+                ? (PickRelayController.activeIndex() + 1) + "/" + queue.size()
+                : "—";
+
+        lines.add(new SessionLine(
+                Component.translatable(
+                        "screen.pickrelay.session.time",
+                        formatSessionTime(PickRelayController.sessionElapsedTicks())),
+                0xFFD0D0D0
+        ));
+        lines.add(new SessionLine(
+                Component.translatable("screen.pickrelay.session.blocks", PickRelayController.sessionBlocksBroken()),
+                0xFFD0D0D0
+        ));
+
+        if (PickRelayController.isActive() && !PickRelayController.isWaitingForWorkBlock()) {
+            MiningRateEstimator.Estimate estimate = MiningRateEstimator.live();
+            if (estimate.available() && estimate.target() != null) {
+                lines.add(new SessionLine(
+                        Component.translatable(
+                                "screen.pickrelay.session.bps",
+                                estimate.target().state().getBlock().getName(),
+                                formatRate(estimate.blocksPerSecond())
+                        ),
+                        0xFF80E0FF
+                ));
+            } else if (estimate.unbreakable() && estimate.target() != null) {
+                lines.add(new SessionLine(
+                        Component.translatable(
+                                "screen.pickrelay.session.bps_unbreakable",
+                                estimate.target().state().getBlock().getName()),
+                        0xFFFF8888
+                ));
+            } else {
+                lines.add(new SessionLine(Component.translatable("screen.pickrelay.session.bps_none"), 0xFF777777));
+            }
+        } else {
+            lines.add(new SessionLine(Component.translatable("screen.pickrelay.session.bps_none"), 0xFF777777));
+        }
+
+        lines.add(new SessionLine(
+                Component.translatable("screen.pickrelay.session.tool", toolPosition),
+                PickRelayController.isActive() ? 0xFFFFFFFF : 0xFF909090
+        ));
+
+        Minecraft minecraft = Minecraft.getInstance();
+        List<SessionLine> dynamic = new ArrayList<>();
+        if (minecraft.player != null) {
+            List<MobEffectInstance> effects = new ArrayList<>(minecraft.player.getActiveEffects());
+            effects.sort(Comparator
+                    .comparingInt(this::effectPriority)
+                    .thenComparing(effect -> effect.getEffect().value().getDisplayName().getString()));
+
+            for (MobEffectInstance effect : effects) {
+                if (isMiningRelatedEffect(effect)) {
+                    dynamic.add(effectLine(effect));
+                }
+            }
+            dynamic.addAll(miningAttributeLines());
+            for (MobEffectInstance effect : effects) {
+                if (!isMiningRelatedEffect(effect)) {
+                    dynamic.add(effectLine(effect));
+                }
+            }
+        }
+
+        if (dynamic.isEmpty()) {
+            lines.add(new SessionLine(Component.translatable("screen.pickrelay.session.no_effects"), 0xFF777777));
+            return lines;
+        }
+
+        int remainingRows = 4;
+        if (dynamic.size() <= remainingRows) {
+            lines.addAll(dynamic);
+        } else {
+            lines.addAll(dynamic.subList(0, remainingRows - 1));
+            lines.add(new SessionLine(
+                    Component.translatable("screen.pickrelay.session.more", dynamic.size() - (remainingRows - 1)),
+                    0xFF888888
+            ));
+        }
+        return lines;
+    }
+
+    private SessionLine effectLine(MobEffectInstance effect) {
+        Component name = effect.getEffect().value().getDisplayName();
+        String level = romanNumeral(effect.getAmplifier() + 1);
+        String duration = effect.isInfiniteDuration() ? "∞" : formatEffectTime(effect.getDuration());
+        Component text = name.copy()
+                .append(" ")
+                .append(level)
+                .append("  ")
+                .append(duration);
+
+        int color;
+        if (effect.is(MobEffects.DIG_SLOWDOWN)) {
+            color = 0xFFFF8888;
+        } else if (effect.is(MobEffects.DIG_SPEED) || effect.is(MobEffects.CONDUIT_POWER)) {
+            color = 0xFF99FF99;
+        } else {
+            color = 0xFFB8B8B8;
+        }
+        return new SessionLine(text, color);
+    }
+
+    private boolean isMiningRelatedEffect(MobEffectInstance effect) {
+        return effect.is(MobEffects.DIG_SPEED)
+                || effect.is(MobEffects.DIG_SLOWDOWN)
+                || effect.is(MobEffects.CONDUIT_POWER);
+    }
+
+    private int effectPriority(MobEffectInstance effect) {
+        if (effect.is(MobEffects.DIG_SPEED) || effect.is(MobEffects.CONDUIT_POWER)) {
+            return 0;
+        }
+        if (effect.is(MobEffects.DIG_SLOWDOWN)) {
+            return 1;
+        }
+        return 2;
+    }
+
+    private List<SessionLine> miningAttributeLines() {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player == null) {
+            return List.of();
+        }
+
+        List<SessionLine> result = new ArrayList<>();
+        Set<String> seenModifiers = new HashSet<>();
+        appendMiningModifiers(result, minecraft.player.getAttribute(Attributes.BLOCK_BREAK_SPEED), seenModifiers);
+        appendMiningModifiers(result, minecraft.player.getAttribute(Attributes.MINING_EFFICIENCY), seenModifiers);
+        appendMiningModifiers(result, minecraft.player.getAttribute(Attributes.SUBMERGED_MINING_SPEED), seenModifiers);
+        return result;
+    }
+
+    private void appendMiningModifiers(
+            List<SessionLine> lines,
+            AttributeInstance attribute,
+            Set<String> seenModifiers) {
+        if (attribute == null) {
+            return;
+        }
+
+        List<AttributeModifier> modifiers = new ArrayList<>(attribute.getModifiers());
+        modifiers.sort(Comparator.comparing(modifier -> modifier.id().toString()));
+        for (AttributeModifier modifier : modifiers) {
+            if (modifier.amount() <= 0.0D || !seenModifiers.add(modifier.id().toString())) {
+                continue;
+            }
+            String source = humanizeModifierSource(modifier.id().getPath());
+            String amount = formatModifierAmount(modifier);
+            lines.add(new SessionLine(Component.literal("↑ " + source + " " + amount), 0xFF80E0FF));
+        }
+    }
+
+    private String humanizeModifierSource(String path) {
+        int slash = path.indexOf('/');
+        String source = slash >= 0 ? path.substring(0, slash) : path;
+        StringBuilder result = new StringBuilder();
+        for (String word : source.split("_")) {
+            if (word.isEmpty()) {
+                continue;
+            }
+            if (!result.isEmpty()) {
+                result.append(' ');
+            }
+            result.append(Character.toUpperCase(word.charAt(0)));
+            if (word.length() > 1) {
+                result.append(word.substring(1));
+            }
+        }
+        return result.isEmpty() ? source : result.toString();
+    }
+
+    private String formatModifierAmount(AttributeModifier modifier) {
+        double amount = modifier.amount();
+        return switch (modifier.operation()) {
+            case ADD_VALUE -> "+" + trimNumber(amount);
+            case ADD_MULTIPLIED_BASE, ADD_MULTIPLIED_TOTAL -> "+" + trimNumber(amount * 100.0D) + "%";
+        };
+    }
+
+    private String formatRate(double value) {
+        if (value >= 10.0D) {
+            return String.format(java.util.Locale.ROOT, "%.1f", value);
+        }
+        return String.format(java.util.Locale.ROOT, "%.2f", value);
+    }
+
+    private String formatSecondsPerBlock(double value) {
+        if (value < 1.0D) {
+            return String.format(java.util.Locale.ROOT, "%.2f", value);
+        }
+        return String.format(java.util.Locale.ROOT, "%.1f", value);
+    }
+
+    private String trimNumber(double value) {
+        if (Math.abs(value - Math.rint(value)) < 0.0001D) {
+            return Long.toString(Math.round(value));
+        }
+        return String.format(java.util.Locale.ROOT, "%.1f", value);
+    }
+
+    private String formatSessionTime(long ticks) {
+        long seconds = Math.max(0L, ticks) / 20L;
+        long hours = seconds / 3600L;
+        long minutes = (seconds % 3600L) / 60L;
+        long remainingSeconds = seconds % 60L;
+        return hours > 0
+                ? String.format(java.util.Locale.ROOT, "%d:%02d:%02d", hours, minutes, remainingSeconds)
+                : String.format(java.util.Locale.ROOT, "%02d:%02d", minutes, remainingSeconds);
+    }
+
+    private String formatEffectTime(int ticks) {
+        long seconds = Math.max(0, ticks) / 20L;
+        long minutes = seconds / 60L;
+        long remainingSeconds = seconds % 60L;
+        return minutes >= 60L
+                ? String.format(java.util.Locale.ROOT, "%d:%02d:%02d", minutes / 60L, minutes % 60L, remainingSeconds)
+                : String.format(java.util.Locale.ROOT, "%d:%02d", minutes, remainingSeconds);
+    }
+
+    private String romanNumeral(int value) {
+        return switch (value) {
+            case 1 -> "I";
+            case 2 -> "II";
+            case 3 -> "III";
+            case 4 -> "IV";
+            case 5 -> "V";
+            case 6 -> "VI";
+            case 7 -> "VII";
+            case 8 -> "VIII";
+            case 9 -> "IX";
+            case 10 -> "X";
+            default -> Integer.toString(value);
+        };
+    }
+
+    private String fitPanelText(String text, int maxWidth) {
+        if (font.width(text) <= maxWidth) {
+            return text;
+        }
+        String ellipsis = "…";
+        int available = Math.max(0, maxWidth - font.width(ellipsis));
+        return font.plainSubstrByWidth(text, available) + ellipsis;
+    }
+
     private boolean isInventorySlotQueued(int inventorySlot) {
         if (PickRelayController.isActive()) {
             return queue.entries().stream().anyMatch(entry ->
@@ -632,7 +1052,12 @@ public final class PickRelayScreen extends Screen {
     }
 
     private void renderSessionModeHeader(GuiGraphics gui) {
-        gui.drawCenteredString(font, Component.translatable("screen.pickrelay.session_mode"), width / 2, sessionModeHeaderY(), 0xC0C0C0);
+        gui.drawCenteredString(
+                font,
+                Component.translatable("screen.pickrelay.session_mode"),
+                width / 2,
+                sessionModeHeaderY(),
+                0xC0C0C0);
     }
 
     private void renderQueueHeader(GuiGraphics gui) {
@@ -681,7 +1106,8 @@ public final class PickRelayScreen extends Screen {
         if (zone == QueueDropZone.SWAP) {
             int x = queueGridStartX() + (targetCell % COLUMNS) * SLOT_SIZE;
             int y = queueStartY() + (targetCell / COLUMNS) * SLOT_SIZE;
-            drawOutline(gui, x, y, 0xFFFFFFFF);
+            drawOutline(gui, x, y, COLOR_DRAG_TARGET);
+            drawInnerOutline(gui, x, y, COLOR_DRAG_TARGET);
         } else {
             drawInsertionMarker(gui, targetCell, zone == QueueDropZone.INSERT_AFTER);
         }
@@ -691,7 +1117,7 @@ public final class PickRelayScreen extends Screen {
         int x = queueGridStartX() + (targetCell % COLUMNS) * SLOT_SIZE;
         int y = queueStartY() + (targetCell / COLUMNS) * SLOT_SIZE;
         int markerX = after ? x + SLOT_SIZE - 1 : x;
-        gui.fill(markerX, y, markerX + 2, y + SLOT_SIZE, 0xFFFFFFFF);
+        gui.fill(markerX, y, markerX + 2, y + SLOT_SIZE, COLOR_DRAG_TARGET);
     }
 
     private void renderHoveredTooltip(GuiGraphics gui, int mouseX, int mouseY) {
@@ -713,8 +1139,12 @@ public final class PickRelayScreen extends Screen {
             List<Component> lines = new ArrayList<>(Screen.getTooltipFromItem(Minecraft.getInstance(), stack));
             lines.add(Component.empty());
             lines.add(Component.translatable("tooltip.pickrelay.header").withStyle(ChatFormatting.GRAY));
-            lines.add(Component.translatable("tooltip.pickrelay.position", queueCell + 1, queue.size()).withStyle(ChatFormatting.DARK_GRAY));
-            lines.add(Component.translatable("tooltip.pickrelay.inventory_slot", inventoryLocation(entry.currentInventorySlot())).withStyle(ChatFormatting.DARK_GRAY));
+            lines.add(Component.translatable("tooltip.pickrelay.position", queueCell + 1, queue.size())
+                    .withStyle(ChatFormatting.DARK_GRAY));
+            lines.add(Component.translatable(
+                            "tooltip.pickrelay.inventory_slot",
+                            inventoryLocation(entry.currentInventorySlot()))
+                    .withStyle(ChatFormatting.DARK_GRAY));
             if (stack.isDamageableItem()) {
                 int remaining = stack.getMaxDamage() - stack.getDamageValue();
                 double percent = stack.getMaxDamage() <= 0 ? 0.0D : remaining * 100.0D / stack.getMaxDamage();
@@ -725,26 +1155,34 @@ public final class PickRelayScreen extends Screen {
                         String.format("%.1f", percent)
                 ).withStyle(ChatFormatting.DARK_GRAY));
             }
-            lines.add(Component.translatable("tooltip.pickrelay.mode", Component.translatable(workModeTranslation(entry))).withStyle(ChatFormatting.DARK_GRAY));
+            lines.add(Component.translatable(
+                            "tooltip.pickrelay.mode",
+                            Component.translatable(workModeTranslation(entry)))
+                    .withStyle(ChatFormatting.DARK_GRAY));
             if (entry.workMode() != RelayWorkMode.UNTIL_BROKEN) {
-                lines.add(Component.translatable("tooltip.pickrelay.target", entry.workTarget()).withStyle(ChatFormatting.DARK_GRAY));
+                lines.add(Component.translatable("tooltip.pickrelay.target", entry.workTarget())
+                        .withStyle(ChatFormatting.DARK_GRAY));
             }
             if (entry.preserveAtOne()) {
                 lines.add(Component.translatable("tooltip.pickrelay.preserve").withStyle(ChatFormatting.DARK_GRAY));
             }
-            lines.add(Component.translatable("tooltip.pickrelay.status", Component.translatable(statusTranslation(entry.status())))
+            lines.add(Component.translatable(
+                            "tooltip.pickrelay.status",
+                            Component.translatable(statusTranslation(entry.status())))
                     .withStyle(ChatFormatting.DARK_GRAY));
             if (entry.status() == RelayEntryStatus.ACTIVE) {
                 lines.add(progressText(entry).copy().withStyle(ChatFormatting.WHITE));
             } else if (PickRelayController.canEditQueue() && minecraft.player != null) {
                 int trackedSlot = entry.currentInventorySlot();
                 if (trackedSlot < 0 || trackedSlot >= 36) {
-                    lines.add(Component.translatable("tooltip.pickrelay.missing_will_skip").withStyle(ChatFormatting.YELLOW));
+                    lines.add(Component.translatable("tooltip.pickrelay.missing_will_skip")
+                            .withStyle(ChatFormatting.YELLOW));
                 } else {
                     ItemStack live = minecraft.player.getInventory().getItem(trackedSlot);
                     Component problem = RelayValidator.validateEntry(entry, live);
                     if (problem != null) {
-                        lines.add(Component.translatable("tooltip.pickrelay.problem", problem).withStyle(ChatFormatting.RED));
+                        lines.add(Component.translatable("tooltip.pickrelay.problem", problem)
+                                .withStyle(ChatFormatting.RED));
                     }
                 }
             }
@@ -819,7 +1257,10 @@ public final class PickRelayScreen extends Screen {
     }
 
     private int gridCellAt(double mouseX, double mouseY, int startX, int startY, int rows) {
-        if (mouseX < startX || mouseX >= startX + GRID_WIDTH || mouseY < startY || mouseY >= startY + rows * SLOT_SIZE) {
+        if (mouseX < startX
+                || mouseX >= startX + GRID_WIDTH
+                || mouseY < startY
+                || mouseY >= startY + rows * SLOT_SIZE) {
             return -1;
         }
 
@@ -845,18 +1286,45 @@ public final class PickRelayScreen extends Screen {
     }
 
     private int queueGridStartX() {
+        if (responsiveSessionPanelLayout()) {
+            int contentWidth = GRID_WIDTH * 2 + SESSION_PANEL_WIDTH + SESSION_PANEL_GAP * 2;
+            return (width - contentWidth) / 2;
+        }
         if (sideBySideInventoryLayout()) {
             int contentWidth = GRID_WIDTH * 2 + SIDE_BY_SIDE_GRID_GAP;
+            return (width - contentWidth) / 2;
+        }
+        if (normalSessionPanelLayout()) {
+            int contentWidth = GRID_WIDTH + SESSION_PANEL_GAP + SESSION_PANEL_WIDTH;
             return (width - contentWidth) / 2;
         }
         return (width - GRID_WIDTH) / 2;
     }
 
     private int inventoryGridStartX() {
+        if (responsiveSessionPanelLayout()) {
+            return sessionPanelX() + SESSION_PANEL_WIDTH + SESSION_PANEL_GAP;
+        }
         if (sideBySideInventoryLayout()) {
             return queueGridStartX() + GRID_WIDTH + SIDE_BY_SIDE_GRID_GAP;
         }
         return (width - GRID_WIDTH) / 2;
+    }
+
+    private int sessionPanelX() {
+        return queueGridStartX() + GRID_WIDTH + SESSION_PANEL_GAP;
+    }
+
+    private boolean sessionPanelVisible() {
+        return responsiveSessionPanelLayout() || normalSessionPanelLayout();
+    }
+
+    private boolean responsiveSessionPanelLayout() {
+        return sideBySideInventoryLayout() && width >= RESPONSIVE_SESSION_MIN_WIDTH;
+    }
+
+    private boolean normalSessionPanelLayout() {
+        return !sideBySideInventoryLayout() && width >= NORMAL_SESSION_MIN_WIDTH;
     }
 
     private int queueHeaderCenterX() {
@@ -891,8 +1359,12 @@ public final class PickRelayScreen extends Screen {
         return detailsSummaryY() + 10;
     }
 
+    private int detailsRateY() {
+        return detailsProgressY() + 10;
+    }
+
     private int detailsControlsY() {
-        return detailsProgressY() + 16;
+        return detailsRateY() + 16;
     }
 
     private int detailsControlsStartX() {
@@ -1005,11 +1477,24 @@ public final class PickRelayScreen extends Screen {
         gui.fill(x + 2, y + 2, x + 17, y + 17, 0xFF242424);
     }
 
+    private void drawPanelBackground(GuiGraphics gui, int x, int y, int panelWidth, int panelHeight) {
+        gui.fill(x, y, x + panelWidth, y + panelHeight, 0xFF373737);
+        gui.fill(x + 1, y + 1, x + panelWidth - 1, y + panelHeight - 1, 0xFF1E1E1E);
+    }
+
     private void drawOutline(GuiGraphics gui, int x, int y, int color) {
         gui.fill(x, y, x + SLOT_SIZE, y + 1, color);
         gui.fill(x, y + SLOT_SIZE - 1, x + SLOT_SIZE, y + SLOT_SIZE, color);
         gui.fill(x, y, x + 1, y + SLOT_SIZE, color);
         gui.fill(x + SLOT_SIZE - 1, y, x + SLOT_SIZE, y + SLOT_SIZE, color);
+    }
+
+    private void drawInnerOutline(GuiGraphics gui, int x, int y, int color) {
+        int inset = 2;
+        gui.fill(x + inset, y + inset, x + SLOT_SIZE - inset, y + inset + 1, color);
+        gui.fill(x + inset, y + SLOT_SIZE - inset - 1, x + SLOT_SIZE - inset, y + SLOT_SIZE - inset, color);
+        gui.fill(x + inset, y + inset, x + inset + 1, y + SLOT_SIZE - inset, color);
+        gui.fill(x + SLOT_SIZE - inset - 1, y + inset, x + SLOT_SIZE - inset, y + SLOT_SIZE - inset, color);
     }
 
     private boolean contains(double mouseX, double mouseY, int x, int y, int w, int h) {
@@ -1083,6 +1568,9 @@ public final class PickRelayScreen extends Screen {
                 }
             });
         }
+    }
+
+    private record SessionLine(Component text, int color) {
     }
 
     private enum InventoryDragMode {

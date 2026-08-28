@@ -35,7 +35,6 @@ consider_java_home() {
     return 1
 }
 
-# Explicit project override, then JAVA_HOME, then PATH.
 consider_java_home "${PICK_RELAY_JAVA_HOME:-}" || true
 if [ -z "$JAVA_EXE" ]; then
     consider_java_home "${JAVA_HOME:-}" || true
@@ -47,8 +46,6 @@ if [ -z "$JAVA_EXE" ] && command -v java >/dev/null 2>&1; then
     fi
 fi
 
-# Common Linux/macOS JDK locations. Do not let an incompatible PATH Java stop
-# the search for a separate Java 21 installation.
 if [ -z "$JAVA_EXE" ]; then
     shopt -s nullglob
     candidates=(

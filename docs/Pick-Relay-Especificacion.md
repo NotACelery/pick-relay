@@ -1,8 +1,8 @@
-# Pick Relay — Especificación funcional y técnica 1.0.0
+# Pick Relay — Especificación funcional y técnica 1.1.1
 
-> **Nombre:** Pick Relay  
-> **Summary:** **Automate the grind. Schedule your tools.**  
-> **Versión de esta especificación:** 1.0.0  
+> **Nombre:** Pick Relay
+> **Summary:** **Automate the grind. Schedule your tools.**
+> **Versión de esta especificación:** 1.1.1
 > **Target:** Minecraft 1.21.1 · NeoForge 21.1.235+ · Client-side
 
 ---
@@ -145,14 +145,17 @@ Objetivo principal: líneas de generación y granjas avanzadas.
 
 ## 7. GUI
 
-La pantalla principal no pausa deliberadamente el mundo y contiene, en orden:
+La pantalla principal no pausa deliberadamente el mundo. Sus bloques funcionales son:
 
 1. Relay Queue 4×9.
-2. Herramienta seleccionada y detalles.
-3. Controles individuales de Work Mode/target/Preserve.
-4. Player Inventory.
-5. Session Mode: Single Block / Line Mining.
-6. Start/Stop, Clear y Close.
+2. Session panel de telemetría y efectos.
+3. Player Inventory.
+4. Herramienta seleccionada y detalles.
+5. Controles individuales de Work Mode/target/Preserve.
+6. Session Mode: Single Block / Line Mining.
+7. Start/Stop, Clear y Close.
+
+En altura compacta, Queue y Player Inventory se muestran lado a lado; cuando existe ancho suficiente, el Session panel se ubica entre ambos y **Selected Tool** permanece debajo del bloque superior. En altura normal, el Session panel se ubica a la derecha de Queue. Si el ancho no alcanza, el panel se oculta antes de sacrificar la legibilidad del layout. Toda la geometría interactiva (hover, click y drag) debe usar las mismas funciones de layout que el render para que redimensionar la ventana no desplace las hitboxes respecto de los slots visibles.
 
 ### 7.1 Interacciones de inventario
 
@@ -170,6 +173,9 @@ La pantalla principal no pausa deliberadamente el mundo y contiene, en orden:
 - Zona central del destino: swap.
 - Bordes/entre slots: insert before/after.
 - Drop fuera de la queue: remove del `RelayEntry`.
+- Entrada ACTIVE: borde exterior blanco.
+- Entrada seleccionada para inspección: borde interior dorado, independiente del estado ACTIVE.
+- Destino de swap/inserción durante drag: indicador cian.
 
 ### 7.3 ACTIVE
 
@@ -178,7 +184,42 @@ Durante una sesión:
 - la estructura/configuración queda read-only;
 - siguen disponibles hover, tooltips, selección visual e inspección;
 - puede cerrarse/reabrirse la GUI sin detener la sesión;
+- el mismo bind configurable de Pick Relay puede cerrar la GUI;
+- la tecla vanilla de inventario también cierra la GUI;
+- al abrir o mantener abierta la GUI, Pick Relay suprime inputs normales de gameplay en segundo plano: uso de ítems, ataque manual y teclas de movimiento;
+- cualquier uso de ítem ya iniciado se libera inmediatamente y un minado manual en curso se aborta;
+- si la sesión está ACTIVE, el automining controlado por Pick Relay es la única acción de gameplay que continúa intencionalmente detrás de la GUI;
 - Stop AFK Mining finaliza manualmente el relay.
+
+### 7.4 Session panel (1.1.0)
+
+El panel de sesión expone información que normalmente quedaría oculta mientras el usuario mantiene Pick Relay abierto durante automining:
+
+- tiempo transcurrido desde Start, medido en ticks de sesión;
+- bloques destruidos exitosamente por llamadas cuya procedencia pertenece a Pick Relay;
+- BPS teórico de la herramienta ACTIVE contra el bloque actualmente bajo el crosshair;
+- posición de la herramienta ACTIVE dentro de la queue (`X/Y`);
+- efectos activos del jugador, incluyendo nivel y duración restante;
+- prioridad visual para Haste, Conduit Power y Mining Fatigue;
+- modificadores positivos de `BLOCK_BREAK_SPEED`, `MINING_EFFICIENCY` y `SUBMERGED_MINING_SPEED`.
+
+Los bonus de atributos se leen desde el estado real del jugador. No existe una dependencia hardcodeada con Artifacts u otro mod: accesorios compatibles como Digging Claws pueden aparecer porque modifican atributos vanilla de velocidad de minado.
+
+### 7.5 Estimador de velocidad de minado (1.1.0)
+
+Mientras exista un bloque bajo el crosshair dentro del alcance normal del jugador, **Selected Tool** calcula una estimación para la entrada de queue inspeccionada sin equiparla realmente. La estimación considera:
+
+- velocidad de minado que el `ItemStack` declara para ese `BlockState`;
+- requisito de herramienta/tier correcto para el bloque;
+- modificadores de atributos que tendría esa herramienta en `MAINHAND`, incluidos encantamientos como Efficiency;
+- Haste o Conduit Power;
+- Mining Fatigue;
+- `BLOCK_BREAK_SPEED`, `MINING_EFFICIENCY` y `SUBMERGED_MINING_SPEED`;
+- penalización por estar bajo el agua o sin tocar el suelo.
+
+El resultado se cuantiza a ticks de Minecraft y se muestra como BPS aproximado y segundos por bloque. Durante ACTIVE, el Session panel usa el destroy-progress real de la herramienta actualmente equipada para acercarse todavía más al comportamiento efectivo.
+
+El valor representa capacidad teórica de rotura del bloque. No intenta modelar respawn de generadores, latencia de red, TPS ni delays propios de otros mods fuera del cálculo normal de destroy progress.
 
 ---
 
@@ -335,9 +376,9 @@ Minecraft continúa manejando Efficiency, Unbreaking, Silk Touch, Fortune, Mendi
 
 ---
 
-## 17. No objetivos de 1.0
+## 17. No objetivos de la línea 1.x
 
-Pick Relay no debe transformarse en un bot general. La versión 1.0 no:
+Pick Relay no debe transformarse en un bot general. La línea 1.x no:
 
 - busca la herramienta «mejor»;
 - selecciona herramientas no agregadas por el usuario;
@@ -354,7 +395,7 @@ Pick Relay no debe transformarse en un bot general. La versión 1.0 no:
 
 ---
 
-## 18. Arquitectura 1.0
+## 18. Arquitectura 1.x
 
 Responsabilidades principales:
 
@@ -364,13 +405,13 @@ Responsabilidades principales:
 - `InventoryRelayManager`: equip/swap/hotbar sync.
 - `MiningProgressTracker`: blocks/durability/completion.
 - `SafetyMonitor`: posición, dimensión, vida/conexión.
-- `PickRelayScreen`: planificación e inspección.
+- `PickRelayScreen`: planificación, inspección, gestos de queue/inventario, telemetría y geometría responsiva. La clase permanece monolítica durante 1.1.1 para no mezclar un refactor arquitectónico con el hotfix; `docs/DEVELOPMENT.md` define fronteras de extracción posteriores.
 - `PickRelayHud`: feedback runtime.
 - Mixin sobre `MultiPlayerGameMode.destroyBlock`: procedencia de destrucción y accounting.
 
 ---
 
-## 19. Definición de completitud 1.0
+## 19. Definición de completitud del motor 1.0
 
 La versión 1.0 se considera completa cuando se valida ingame:
 
@@ -393,8 +434,8 @@ Estos criterios fueron validados durante el desarrollo previo al cierre de 1.0.0
 
 ---
 
-## 20. Futuro fuera de 1.0
+## 20. Futuro
 
-La integración opcional con **THE Pick / Eruruu's Patch** sigue siendo una mejora futura. Pick Relay 1.0 funciona de manera independiente y no requiere Eruruu's Patch.
+La integración opcional con **THE Pick / Eruruu's Patch** sigue siendo una mejora futura. Pick Relay funciona de manera independiente y no requiere Eruruu's Patch.
 
 La integración futura debe reutilizar el controller ya validado, evitando duplicar dos motores distintos de automining.

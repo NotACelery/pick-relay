@@ -78,5 +78,18 @@
   "screen.pickrelay.close": "Cerrar",
   "screen.pickrelay.selected_tool": "HERRAMIENTA SELECCIONADA",
   "screen.pickrelay.session_mode": "MODO DE MINADO",
-  "tooltip.pickrelay.missing_will_skip": "Herramienta seleccionada no disponible — esta entrada de la queue se omitirá"
+  "tooltip.pickrelay.missing_will_skip": "Herramienta seleccionada no disponible — esta entrada de la queue se omitirá",
+  "screen.pickrelay.session_panel": "SESIÓN",
+  "screen.pickrelay.session.time": "Tiempo: %s",
+  "screen.pickrelay.session.blocks": "Bloques: %s",
+  "screen.pickrelay.session.tool": "Herr.: %s",
+  "screen.pickrelay.session.no_effects": "Sin efectos activos",
+  "screen.pickrelay.session.more": "+%s más",
+  "screen.pickrelay.estimate.aim": "Apunta a un bloque para estimar la velocidad",
+  "screen.pickrelay.estimate.unbreakable": "%s · Irrompible",
+  "screen.pickrelay.estimate.unavailable": "%s · Velocidad no disponible",
+  "screen.pickrelay.estimate.rate": "%s · ~%s BPS · %ss/bloque",
+  "screen.pickrelay.session.bps": "%s: %s BPS",
+  "screen.pickrelay.session.bps_unbreakable": "%s: irrompible",
+  "screen.pickrelay.session.bps_none": "BPS: —"
 }
