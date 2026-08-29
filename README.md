@@ -180,10 +180,8 @@ build/libs/pickrelay-1.21.1-1.1.1.jar
 
 - [`docs/Pick-Relay-Especificacion.md`](docs/Pick-Relay-Especificacion.md) — current 1.1.1 functional/technical specification.
 - [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) — architecture, invariants, responsive layout rules and source-maintenance guide.
-- [`docs/TESTING-1.1.1.md`](docs/TESTING-1.1.1.md) — 1.1.1 background-action hotfix regression checklist.
-- [`docs/TESTING-1.1.0.md`](docs/TESTING-1.1.0.md) — 1.1.0 session-panel and GUI-controls regression checklist.
-- [`docs/TESTING-1.0.1.md`](docs/TESTING-1.0.1.md) — 1.0.1 responsive-layout hotfix checklist.
-- [`docs/PUBLISHING-ROADMAP.md`](docs/PUBLISHING-ROADMAP.md) — release preparation for Modrinth and CurseForge.
+- [`docs/TESTING-1.1.1.md`](docs/TESTING-1.1.1.md) — current release regression checklist.
+- [`docs/PUBLISHING.md`](docs/PUBLISHING.md) — current Modrinth/CurseForge release checklist.
 
 ## Debug logging
 

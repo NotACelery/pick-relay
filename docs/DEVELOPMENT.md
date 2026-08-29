@@ -611,7 +611,8 @@ Keep each document focused:
 - `README.md`: user-facing feature overview and build entry point.
 - `docs/Pick-Relay-Especificacion.md`: behavioral contract.
 - `docs/DEVELOPMENT.md`: implementation invariants and developer guidance.
-- `docs/TESTING-*.md`: release-specific regression checklists.
+- `docs/TESTING-1.1.1.md`: current release regression checklist.
+- `docs/PUBLISHING.md`: current release/publishing checklist.
 - `BUILD-STATUS.md`: current release/build validation status.
 - `CHANGELOG.md`: user-visible version changes only.
 - `SOURCE-MANIFEST.json`: exact expected source-tree hashes for recoverability.
