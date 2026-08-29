@@ -16,7 +16,7 @@ source can remain compact and largely comment-free.
 - Java 21
 - ModDevGradle 2.0.143
 - Client-side only
-- Release candidate: 1.1.1
+- Current stable release: 1.1.1
 
 The server does not require Pick Relay.
 
@@ -624,7 +624,7 @@ Do not duplicate the same historical explanation in Java comments and several Ma
 ## 20. Future refactor boundaries
 
 The current 1.1.1 `PickRelayScreen` is intentionally not split during the release formatting pass.
-After 1.1.1 gameplay validation, these are safe candidates to evaluate independently.
+With 1.1.1 gameplay validation complete, these are safe candidates to evaluate independently in a future development cycle.
 
 ### 20.1 Layout calculator
 
@@ -724,7 +724,7 @@ A clean-code-only pass should produce all of the following:
 
 ## 23. Source snapshots and `SOURCE-MANIFEST.json`
 
-The 1.1.1 cleanup baseline is a complete repository snapshot containing the current unpublished
+The 1.1.1 cleanup baseline is a complete repository snapshot containing the current validated
 source tree, configuration, resources and release documentation.
 
 `SOURCE-MANIFEST.json` is the integrity index for the release-relevant tree:
@@ -759,4 +759,4 @@ Expected release artifact:
 build/libs/pickrelay-1.21.1-1.1.1.jar
 ```
 
-The exact final JAR must pass `docs/TESTING-1.1.1.md` before publication.
+The maintainer accepted the 1.1.1 gameplay build after in-game QA. Any later Java/resource change must produce a new JAR and repeat the affected checks from `docs/TESTING-1.1.1.md` before publication or replacement of the binary.

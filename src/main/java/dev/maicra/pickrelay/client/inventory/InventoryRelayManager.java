@@ -131,7 +131,8 @@ public final class InventoryRelayManager {
     }
 
     private static int inventorySlotToMenuSlot(int inventorySlot) {
-
+        // InventoryMenu uses 9..35 for the main inventory and 36..44 for
+        // inventory indices 0..8 (the hotbar).
         return inventorySlot < 9 ? 36 + inventorySlot : inventorySlot;
     }
 

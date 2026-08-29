@@ -2,7 +2,8 @@
 
 > **Nombre:** Pick Relay
 > **Summary:** **Automate the grind. Schedule your tools.**
-> **Versión de esta especificación:** 1.1.1
+> **Versión de esta especificación:** 1.1.1  
+> **Estado:** baseline estable; desarrollo de la pasada 1.1.x finalizado y aceptado tras QA in-game el 2026-08-29.
 > **Target:** Minecraft 1.21.1 · NeoForge 21.1.235+ · Client-side
 
 ---

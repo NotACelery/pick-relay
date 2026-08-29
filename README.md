@@ -6,6 +6,8 @@
 
 **Automate the grind. Schedule your tools.**
 
+Current stable release: **1.1.1**.
+
 Pick Relay is a client-side Minecraft mod for planning and executing ordered tool-relay sessions. Instead of choosing the "best" tool automatically, Pick Relay uses the exact tools, order, limits and safety rules configured by the player.
 
 ## Compatibility
@@ -182,6 +184,7 @@ build/libs/pickrelay-1.21.1-1.1.1.jar
 - [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) — architecture, invariants, responsive layout rules and source-maintenance guide.
 - [`docs/TESTING-1.1.1.md`](docs/TESTING-1.1.1.md) — current release regression checklist.
 - [`docs/PUBLISHING.md`](docs/PUBLISHING.md) — current Modrinth/CurseForge release checklist.
+- [`docs/RELEASE-NOTES-1.1.1.md`](docs/RELEASE-NOTES-1.1.1.md) — ready-to-paste public notes for the 1.1.1 release.
 
 ## Debug logging
 

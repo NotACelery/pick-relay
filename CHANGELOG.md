@@ -2,7 +2,7 @@
 
 ## 1.1.1
 
-Hotfix for background player actions while the Pick Relay screen is open.
+First public release after 1.0.1. It includes the complete 1.1.0 feature set documented below, plus the 1.1.1 hotfix for background player actions while the Pick Relay screen is open.
 
 ### Fixed
 

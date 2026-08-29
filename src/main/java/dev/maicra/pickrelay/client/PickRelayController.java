@@ -95,6 +95,7 @@ public final class PickRelayController {
         return CONFIGURED_QUEUE.get(activeIndex);
     }
 
+    /** True while a block-destroy call belongs to the active Pick Relay mining cycle. */
     public static boolean isControlledAttackInvocation() {
         return controlledAttackInvocation;
     }
@@ -252,7 +253,8 @@ public final class PickRelayController {
                 if (entry.status() != RelayEntryStatus.BROKEN) {
                     entry.setStatus(RelayEntryStatus.BROKEN);
                     RelayDebug.log(
-                            "Active entry {} missing from its slot after reaching critical durability; treating it as broken",
+                            "Active entry {} missing from its slot after reaching critical durability; "
+                                    + "treating it as broken",
                             activeIndex + 1);
                 } else {
                     RelayDebug.log("Entry {} was confirmed broken by Pick Relay", activeIndex + 1);
@@ -309,6 +311,7 @@ public final class PickRelayController {
         preserveTransitionRequested = false;
         holdControlledAttack();
 
+        // Mining can consume the last safe durability, so re-check in the same tick.
         if (!isActive() || activeEntry() != entry || entry.status() != RelayEntryStatus.ACTIVE) {
             return;
         }
@@ -326,7 +329,7 @@ public final class PickRelayController {
             if (entry.preserveAtOne()
                     && afterAttack.isDamageableItem()
                     && MiningProgressTracker.remainingDurability(afterAttack) <= 3) {
-
+                // Allow the authoritative damage update to settle near the break threshold.
                 preserveNearBreakCooldownTicks = Math.max(preserveNearBreakCooldownTicks, 2);
             }
         }
@@ -551,7 +554,7 @@ public final class PickRelayController {
         BlockHitResult blockHit = currentWorkBlock(minecraft);
         if (blockHit == null) {
             waitingForWorkBlock = true;
-
+            // No valid work block pauses mining without ending the session.
             minecraft.gameMode.stopDestroyBlock();
             return;
         }
@@ -586,6 +589,7 @@ public final class PickRelayController {
         }
     }
 
+    /** Resolves the current work block according to the active session mode. */
     private static BlockHitResult currentWorkBlock(Minecraft minecraft) {
         BlockHitResult blockHit = raycastCurrentBlock(minecraft);
         if (blockHit == null) {

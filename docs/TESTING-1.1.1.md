@@ -1,5 +1,7 @@
 # Pick Relay 1.1.1 — Hotfix regression checklist
 
+> **Release status:** 1.1.1 was accepted after in-game QA on 2026-08-29. This file remains an intentionally reusable regression matrix for any future rebuild of the same baseline; the boxes are therefore left reusable instead of being turned into a one-off historical log.
+
 Esta pasada valida el hotfix que convierte la GUI de Pick Relay en un estado de entrada exclusivo: detrás de la pantalla sólo debe continuar el automining controlado por una sesión ACTIVE.
 
 ## Build / loading

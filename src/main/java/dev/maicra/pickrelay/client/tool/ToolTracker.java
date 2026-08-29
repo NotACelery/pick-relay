@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/** Tracks queue entries across inventory moves without modifying ItemStack data. */
 public final class ToolTracker {
     private ToolTracker() {
     }
@@ -41,6 +42,7 @@ public final class ToolTracker {
         };
     }
 
+    /** Reconciles pending and active entries to unique matching inventory slots. */
     public static void reconcileQueue(RelayQueue queue, LocalPlayer player) {
         Set<Integer> claimed = new HashSet<>();
         List<RelayEntry> unresolved = new ArrayList<>();
@@ -95,7 +97,7 @@ public final class ToolTracker {
 
     private static int findMatchingUnclaimedSlot(RelayEntry entry, LocalPlayer player, Set<Integer> claimed) {
         if (entry.status() == RelayEntryStatus.ACTIVE) {
-
+            // Prefer the last exact live snapshot to avoid matching an identical pending tool.
             for (int slot = 0; slot < 36; slot++) {
                 if (claimed.contains(slot)) {
                     continue;
@@ -106,6 +108,7 @@ public final class ToolTracker {
                 }
             }
 
+            // A broad active fingerprint is safe only when the match is unique.
             int uniqueCandidate = -1;
             for (int slot = 0; slot < 36; slot++) {
                 if (claimed.contains(slot)) {

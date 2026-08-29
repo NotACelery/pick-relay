@@ -26,11 +26,9 @@ public final class ClientEvents {
         if (relayToggleCooldownTicks > 0) {
             relayToggleCooldownTicks--;
             while (RelayKeyMappings.OPEN_RELAY.consumeClick()) {
-
             }
         } else if (RelayKeyMappings.OPEN_RELAY.consumeClick()) {
             while (RelayKeyMappings.OPEN_RELAY.consumeClick()) {
-
             }
 
             if (minecraft.screen instanceof PickRelayScreen screen) {

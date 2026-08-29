@@ -196,8 +196,13 @@ public final class MiningRateEstimator {
         return new Target(pos.immutable(), state);
     }
 
-    public record Estimate(Target target, boolean available, boolean unbreakable, double blocksPerSecond,
-                           double secondsPerBlock, int ticksPerBlock) {
+    public record Estimate(
+            Target target,
+            boolean available,
+            boolean unbreakable,
+            double blocksPerSecond,
+            double secondsPerBlock,
+            int ticksPerBlock) {
         private static Estimate unavailable(Target target) {
             return new Estimate(target, false, false, 0.0D, 0.0D, 0);
         }
